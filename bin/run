@@ -1,0 +1,9 @@
+$: << '.'
+
+require 'lib/game'
+require 'settings'
+
+LOGFILE = File.new("log.txt","w")
+at_exit { LOGFILE.close }
+
+ZedSim::Game.new
