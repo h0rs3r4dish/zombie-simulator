@@ -2,6 +2,8 @@ module ZedSim
 
 class Zombie < Creature
 	SYMBOL = 'Z'
+	VISION_LENGTH = 5
+
 	MOVEMENT_RATE = 0.75
 	MOVEMENT_NEEDED = 1
 
