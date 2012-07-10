@@ -11,12 +11,16 @@ class Game
 		@map = Map.new
 
 		@creatures = Array.new
+		@creatures.instance_variable_set :@count, { :zombies => 0, :humans => 0 }
+		def @creatures.count; @count; end
 
-		(rand(12) + 3).times { 
+		@creatures.count[:humans] = rand(12) + 3
+		@creatures.count[:humans].times { 
 			new_human( [rand(80),rand(24)] )
 		}
 
-		(rand(3) + 1).times {
+		@creatures.count[:zombies] = rand(12) + 3
+		@creatures.count[:zombies].times { 
 			new_zombie( [rand(80),rand(24)] )
 		}
 
@@ -32,10 +36,24 @@ class Game
 				exit if key == 'q'
 			end
 
+			game_end if @creatures.count.values.include? 0
+
 			@map.each { |row|
 				@console[row]
 			}
 			@console.draw
+		end
+	end
+	def game_end
+		victors = @creatures.count.to_a.select { |a| a.last != 0 }.flatten.
+			first.to_s.capitalize
+		(11..13).each { |y|
+			@console.text 33,y, " " * 16
+		}
+		@console.text 35,12, "#{victors} win!"
+		@console.draw
+		@console.on_key :blocking => true do
+			exit
 		end
 	end
 

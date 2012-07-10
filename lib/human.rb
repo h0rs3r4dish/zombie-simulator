@@ -17,6 +17,8 @@ class Human < Creature
 		@creature_list.delete self
 		@creature_list.push zed
 		@map[*@location].creature = zed
+		@creature_list.count[:humans] -= 1
+		@creature_list.count[:zombies] += 1
 	end
 end
 

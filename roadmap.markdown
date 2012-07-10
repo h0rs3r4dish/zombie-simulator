@@ -10,7 +10,8 @@ Checklist
  * Simple Game, Map, Creature classes (done)
  * Creature movement at random (done)
  * Zombie infections (done)
- * Zombie hunting of Humans
+ * Zombie hunting of Humans (done)
+ * Simulation end when there are no zombies or no humans left (done)
  * Human avoidence of Zombies and banding together
  * Items, both implementation and generation
  * Humans fighting Zombies with weapons
