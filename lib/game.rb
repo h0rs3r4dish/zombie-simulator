@@ -1,6 +1,7 @@
 require 'lib/console'
 require 'lib/map'
-require 'lib/creatures'
+require 'lib/human'
+require 'lib/zombie'
 
 module ZedSim
 

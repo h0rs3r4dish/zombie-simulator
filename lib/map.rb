@@ -16,6 +16,10 @@ class Map
 			y.to_a.map { |row| @grid[row][x] }
 		end
 	end
+	def tiles_near(x,y,size)
+		self[ Range.new((x-size).min(0),(x+size).max(@width - 1)), 
+			  Range.new((y-size).min(0),(y+size).max(@height - 1)) ]
+	end
 
 	def each(&block); self.to_a.each &block; end
 	def each(&block); self.to_a.each &block; end
