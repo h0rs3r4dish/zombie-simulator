@@ -14,33 +14,18 @@ class Zombie < Creature
 	end
 
 	def tick
-		nearest_human = (@map.tiles_near(*@location, 1).flatten.map { |tile|
-			tile.creature } - [nil]).select { |creature| creature.status == :alive }.first
-		unless nearest_human.nil? then
-			attack nearest_human
-			@objective = nil
-			return
-		end
 		@movement += MOVEMENT_RATE
 		return unless @movement > MOVEMENT_NEEDED
 		@movement -= MOVEMENT_NEEDED
-		if @objective.nil? then
-			range = 2
-			max_range = 5
-			while nearest_human.nil?
-				if range > max_range then
-					move_toward rand(@map.width), rand(@map.height)
-					return
-				end
-				nearest_human = (@map.tiles_near(*@location, range).flatten.map { |tile|
-					tile.creature } - [nil]).select { |creature|
-					creature.status == :alive }.shuffle.first
-				range += 1
-			end
-			@objective = nearest_human
+
+		nearest_human = ((line_of_sight.flatten.delete nil).map { |tile| tile.creature }.
+			delete nil).select { |creature| creature.status == :alive }.sort { |a, b|
+				distance_from(a) <=> distance_from(b) }.first
+
+		if distance_from nearest_human < 2 then
+			attack nearest_human
 		else
-			move_toward *@objective.location
-			@objective = nil if @objective.status != :alive
+			move_towards nearest_human.location
 		end
 	end
 

@@ -96,6 +96,13 @@ class Creature
 		end
 	end
 
+	def distance_from(other)
+		Math.sqrt(
+			(@location.first - other.location.first) ** 2 +
+			(@location.last  - other.location.last) ** 2
+		)
+	end
+
 	def tick; end
 
 	def to_c; self.class.const_get :SYMBOL; end
