@@ -6,9 +6,10 @@ module ZedSim
 class Human < Creature
 	def initialize(*args)
 		super *args
-		@logic = Hash.new.to_struct
-		@logic.zombie_positions = { :north => 0, :east => 0, :south => 0, :west => 0,
+		@brain = Hash.new.to_struct
+		@brain.directions = { :north => 0, :east => 0, :south => 0, :west => 0,
 			:northeast => 0, :southeast => 0, :southwest => 0, :northwest => 0 }
+		@brain.personality = [:stupid, :smart].shuffle.first
 	end
 
 	def tick
@@ -17,12 +18,18 @@ class Human < Creature
 			return
 		end
 		
-		zombies_at_facing = line_of_sight.flatten.map { |tile| tile.creature }.
-			delete_if { |creature| creature.nil? }.select { |creature|
-			creature.status == :zombie }.count
-		@logic.zombie_positions[@facing] = zombies_at_facing
-		ordered = @logic.zombie_positions.to_a.sort { |a, b| a.last <=> b.last }.
-			reverse
+		creatures_visible = line_of_sight.flatten.map { |tile| tile.creature }.
+			delete_if { |creature| creature.nil? }
+		@brain.directions[@facing] = creatures_visible.inject(0) { |save, creature|
+			save + if creature.status == :zombie then
+			   -1
+			elsif @brain.personality == :smart
+				1
+			else
+				0
+			end
+		}
+		ordered = @brain.directions.to_a.sort { |a, b| a.last <=> b.last }
 		@facing = ordered.select { |i| i.last == ordered.first.last }.
 			shuffle.first.first
 		move_along_facing
