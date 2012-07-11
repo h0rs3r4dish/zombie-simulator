@@ -12,7 +12,7 @@ Checklist
  * Zombie infections (done)
  * Zombie hunting of Humans (done)
  * Simulation end when there are no zombies or no humans left (done)
- * Human avoidence of Zombies and banding together
+ * Human avoidence of Zombies and banding together (done)
  * Items, both implementation and generation
  * Humans fighting Zombies with weapons
  * More complex combat

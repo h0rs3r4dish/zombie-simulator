@@ -1,4 +1,5 @@
 require 'lib/creature' 
+require 'lib/items'
 
 module ZedSim
 
@@ -46,6 +47,14 @@ class Zombie < Creature
 		else
 			move_toward *nearest_human.location
 		end
+	end
+
+	def die
+		@creature_list.delete self
+		corpse = Item.new("Corpse", "%")
+		tile = @map[*@location]
+		tile.items << corpse
+		tile.creature = nil
 	end
 
 end

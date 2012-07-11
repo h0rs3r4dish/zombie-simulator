@@ -17,13 +17,17 @@ class Game
 		@creatures.count[:humans] = rand(CONFIG[:starting_humans].last) +
 			CONFIG[:starting_humans].first
 		@creatures.count[:humans].times { 
-			new_human( [rand(80),rand(24)] )
+			loc = [rand(80), rand(24)]
+			@creatures << Human.new(@map, @creatures, loc)
+			@map[*loc].creature = @creatures.last
 		}
 
 		@creatures.count[:zombies] = rand(CONFIG[:starting_zombies].last) +
 			CONFIG[:starting_zombies].first
 		@creatures.count[:zombies].times { 
-			new_zombie( [rand(80),rand(24)] )
+			loc = [rand(80), rand(24)]
+			@creatures << Zombie.new(@map, @creatures, loc)
+			@map[*loc].creature = @creatures.last
 		}
 
 		game_loop
@@ -36,13 +40,12 @@ class Game
 
 			@console.on_key :timeout => time_keeper.mark do |key|
 				exit if key == 'q'
+				@console.getc if key == 'p'
 			end
 
 			game_end if @creatures.count.values.include? 0
 
-			@map.each { |row|
-				@console[row]
-			}
+			@map.each { |row| @console[row] }
 			@console.draw
 		end
 	end
@@ -57,15 +60,6 @@ class Game
 		@console.on_key :blocking => true do
 			exit
 		end
-	end
-
-	def new_human(loc)
-		@creatures << Human.new(@map, @creatures, loc)
-		@map[*loc].creature = @creatures.last
-	end
-	def new_zombie(loc)
-		@creatures << Zombie.new(@map, @creatures, loc)
-		@map[*loc].creature = @creatures.last
 	end
 end
 
