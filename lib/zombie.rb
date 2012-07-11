@@ -13,6 +13,7 @@ class Zombie < Creature
 		super map, creature_list, location
 		@status = :zombie
 		@movement = 0
+		@color = :green
 	end
 
 	def tick
@@ -41,15 +42,7 @@ class Zombie < Creature
 				move_toward rand(@map.width), rand(@map.height)
 				return
 			end
-			dx = 0
-			dy = 0
-			s_facing = @facing.to_s
-			dy = -1 if s_facing.include? 'north'
-			dy = 1  if s_facing.include? 'south'
-			dx = -1 if s_facing.include? 'west'
-			dx = 1  if s_facing.include? 'east'
-			move_toward (@location.first+dx).min(0).max(@map.width-1),
-				(@location.last+dy).min(0).max(@map.height-1)
+			move_along_facing
 		else
 			move_toward *nearest_human.location
 		end

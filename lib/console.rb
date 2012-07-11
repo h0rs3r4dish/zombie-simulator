@@ -13,7 +13,7 @@ class Console
 		class << @buffer; attr_reader :height, :width; end
 
 		@changed = true
-
+		@last_color = :white
 		@cursor = Struct.new(:x,:y).new(0,0)
 	end
 
@@ -44,6 +44,11 @@ class Console
 	end
 	def [](str)
 		text @cursor.x, @cursor.y, str
+	end
+
+	def color(new_color)
+		return if new_color == @last_color
+		@last_color = new_color
 	end
 
 	def getc

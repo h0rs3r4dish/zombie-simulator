@@ -46,6 +46,11 @@ class Tile
 		@elevation = 0
 		@creature = nil
 		@items = []
+		@color = :white
+	end
+
+	def color
+		(@creature.nil?) ? @color : @creature.color
 	end
 
 	def to_s
