@@ -10,6 +10,7 @@ class Map
 	end
 
 	def [](x,y)
+		log "[%s,%s] on %s,%s" % [x,y,@width,@height]
 		if y.class.to_s == "Fixnum" then
 			@grid[y][x]
 		elsif y.class.to_s == "Range" then

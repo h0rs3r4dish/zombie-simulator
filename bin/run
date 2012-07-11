@@ -3,7 +3,8 @@ $: << '.'
 require 'lib/game'
 require 'settings'
 
-LOGFILE = File.new("log.txt","w")
+LOGFILE = File.open("log.txt","w")
 at_exit { LOGFILE.close }
+def log(*a); LOGFILE.puts *a; end
 
 ZedSim::Game.new

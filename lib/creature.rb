@@ -55,13 +55,16 @@ class Creature
 		vision = self.class.const_get :VISION_LENGTH
 		case @facing
 		when :north, :south
-			(0..vision).to_a.map { |height|
-				@map[ (@location.first + ((@facing == :south) ? -height : height)).min(0).
-					max(@map.width - 1),
+			result = (0..vision).to_a.map { |offset|
+				@map[ (@location.first + ((@facing == :north) ? -offset : offset)).
+					min(0).max(@map.height - 1),
 					Range.new(
-						(@location.first - height).min(0),
-						(@location.first + height).max(@map.height - 1) ) ]
+						(@location.last - offset).min(0),
+						(@location.last + offset).max(@map.height - 1)
+				) ]
 			}
+			log result.inspect
+			return result
 		when :east, :west
 			cols = (0..vision).to_a.map { |width|
 				(
@@ -84,7 +87,7 @@ class Creature
 			cols.each_with_index { |row, x| row.each_with_index { |tile, y|
 				rows[y][x] = tile
 			} }
-			rows
+			rows.each { |col| col.delete nil }
 		when :northeast, :northwest, :southeast, :southwest
 			x_range = Range.new( @location.first, (@location.first + (
 				(@facing.to_s.include? 'south') ? -vision : vision)).min(0).max(
