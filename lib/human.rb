@@ -14,8 +14,11 @@ class Human < Creature
 
 	def tick
 		if @status == :infected then
-			turn_to_zombie
-			return
+			@brain.infection -= 1
+			if @brain.infection == 0
+				turn_to_zombie
+				return
+			end
 		end
 		
 		creatures_visible = line_of_sight.flatten.map { |tile| tile.creature }.
@@ -33,6 +36,11 @@ class Human < Creature
 		@facing = ordered.select { |i| i.last == ordered.first.last }.
 			shuffle.first.first
 		move_along_facing
+	end
+
+	def infect
+		@brain.infection = rand 10
+		@status = :infected
 	end
 
 	def turn_to_zombie

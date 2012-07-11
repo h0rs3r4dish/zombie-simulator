@@ -8,18 +8,20 @@ module ZedSim
 class Game
 	def initialize
 		@console = Console.new
-		@map = Map.new
+		@map = Map.new *CONFIG[:map]
 
 		@creatures = Array.new
 		@creatures.instance_variable_set :@count, { :zombies => 0, :humans => 0 }
 		def @creatures.count; @count; end
 
-		@creatures.count[:humans] = rand(12) + 3
+		@creatures.count[:humans] = rand(CONFIG[:starting_humans].last) +
+			CONFIG[:starting_humans].first
 		@creatures.count[:humans].times { 
 			new_human( [rand(80),rand(24)] )
 		}
 
-		@creatures.count[:zombies] = rand(12) + 3
+		@creatures.count[:zombies] = rand(CONFIG[:starting_zombies].last) +
+			CONFIG[:starting_zombies].first
 		@creatures.count[:zombies].times { 
 			new_zombie( [rand(80),rand(24)] )
 		}

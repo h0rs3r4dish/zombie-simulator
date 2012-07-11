@@ -13,6 +13,7 @@ class Zombie < Creature
 		@status = :zombie
 		@movement = 0
 		@color = :green
+		@facing = human_source.facing unless human_source.nil?
 	end
 
 	def tick
@@ -25,7 +26,7 @@ class Zombie < Creature
 			creature.status == :alive }.shuffle.first
 
 		unless touchable_human.nil? then
-			attack touchable_human
+			touchable_human.infect
 			return
 		end
 
@@ -47,9 +48,6 @@ class Zombie < Creature
 		end
 	end
 
-	def attack(human)
-		human.status = :infected
-	end
 end
 
 end
