@@ -2,8 +2,8 @@
 
 $: << '.'
 
-require 'lib/game'
 require 'settings'
+require 'lib/game'
 
 LOGFILE = File.open("log.txt","w")
 at_exit { LOGFILE.close }

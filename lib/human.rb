@@ -36,18 +36,20 @@ class Human < Creature
 		@brain.objective = nil
 
 		@facing = @brain.directions.keys.shuffle.first
+		@bleeding = false
 	end
 
 	def tick
 		if @status == :infected then
 			log "##{@id} infection level #{@brain.infection}"
 			@brain.infection -= 1
-			@map[*@location].color = :bright_red if rand(3) != 2
 			if @brain.infection == 0
 				turn_to_zombie
 				return
 			end
 		end
+
+		bleed if @bleeding and rand(5) < 3
 
 		@brain.objective = @brain.priorities.pop if @brain.objective.nil?
 
@@ -56,6 +58,7 @@ class Human < Creature
 				tile.creature }.delete_if { |val| val.nil? }.select { |creature|
 				creature.status == :zombie }.shuffle.first
 			unless touchable_zombie.nil? then
+				alert_in_area touchable_zombie.location, 5, [:alive,:infected], :attack
 				touchable_zombie.die if rand(100) < @pack.weapon.accuracy
 			end
 		end
@@ -73,7 +76,7 @@ class Human < Creature
 			elsif distance_from(nearest_human) > 3 then
 				move_best_direction :humans => 2
 			else
-				shelve_objective
+				objective_next
 			end
 		when :find_weapon
 			nearest_weapon = line_of_sight.flatten.select { |tile| 
@@ -85,8 +88,9 @@ class Human < Creature
 				if distance_from(nearest_weapon) < 2 then
 					weapon = @map[*nearest_weapon.location].items.pop_weapon
 					@pack.weapon = weapon
+					objective_next
 				else
-					shelve_objective Objective.new(:goto, nearest_weapon.location)
+					objective_shelve Objective.new(:goto, nearest_weapon.location)
 					move_toward *@brain.objective.location
 				end
 			end
@@ -94,12 +98,12 @@ class Human < Creature
 			if @location != location then
 				move_toward *@brain.objective.location
 			else
-				@brain.objective = @brain.priorities.pop
+				objective_next
 			end
 		end
 	end
 
-	def shelve_objective(replace_with=nil)
+	def objective_shelve(replace_with=nil)
 		current_objective = @brain.objective
 		@brain.objective = if replace_with.nil? then
 			@brain.priorities.pop
@@ -107,6 +111,9 @@ class Human < Creature
 			replace_with
 		end
 		@brain.priorities.push current_objective
+	end
+	def objective_next
+		@brain.objective = @brain.priorities.pop
 	end
 
 	def move_best_direction(changes={})
@@ -158,12 +165,24 @@ class Human < Creature
 		move_along_facing
 	end
 
+	def alert(loc, type=nil)
+		case type
+		when :attack
+			return unless @brain.personality.include?(:aggressive) and not @pack.
+				weapon.nil?
+		when :defend
+			return if @pack.weapon.nil?
+		end
+		objective_shelve Objective.new(:goto, loc)
+	end
+
 	def infect
+		alert_in_area @location, 5, [:alive,:infected], :defend
 		@brain.infection = rand(19) + 1
 		@status = :infected
 		@color = :bright_yellow
+		@bleeding = true
 	end
-
 	def turn_to_zombie
 		remove_self
 		zed = Zombie.new(@map, @creature_list, @location, self)

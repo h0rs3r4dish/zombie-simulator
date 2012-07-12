@@ -1,5 +1,6 @@
 require 'lib/creature' 
 require 'lib/items'
+require('lib/extra/markers') if CONFIG[:markers]
 
 module ZedSim
 
@@ -63,22 +64,12 @@ class Zombie < Creature
 		end
 	end
 
-	def die
-		remove_self
-		corpse = Item.new("Corpse", :body, "%")
-		@map[*@location].items << corpse
-	end
-
 	def attack(human)
-		human.infect if rand(3) == 1
-		@map.tiles_near(*@location, 7).flatten.each { |tile|
-			creature = tile.creature
-			next if creature.nil?
-			next unless creature.status == :zombie
-			creature.alert human.location
-		}
+		alert_in_area human.location, 7, :zombie
+		return unless rand(3) == 0
+		human.infect
 	end
-	def alert(loc)
+	def alert(loc, type=nil)
 		@objective = loc
 
 		return unless CONFIG[:markers]
@@ -89,17 +80,5 @@ class Zombie < Creature
 	end
 end
 
-class AlertMarker < Creature
-	SYMBOL = '!'
-	def initialize(*args)
-		super *args
-		@life = 1
-		@color = :bright_white
-		@status = :temporary
-	end
-	def tick
-		remove_self
-	end
-end
 
 end

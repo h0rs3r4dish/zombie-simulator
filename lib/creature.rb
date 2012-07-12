@@ -112,6 +112,28 @@ class Creature
 		end
 	end
 
+	def alert(loc, type=nil); end
+	def alert_in_area(loc, radius, filter, type=nil)
+		@map.tiles_near(*@location, radius).flatten.each { |tile|
+			creature = tile.creature
+			next if creature.nil?
+			if filter.class.to_s == "Array" then
+				next unless filter.include? creature.status
+			else
+				next unless creature.status == filter
+			end
+			creature.alert loc, type
+		}
+	end
+
+	def bleed
+		@map[*@location].color = :bright_red
+	end
+	def die
+		remove_self
+		corpse = Item.new("Corpse of #{@id.to_s 16}", :corpse, "%")
+		@map[*@location].items << corpse
+	end
 	def remove_self
 		@map[*@location].creature = nil
 		@creature_list.delete self

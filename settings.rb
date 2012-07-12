@@ -6,5 +6,5 @@ CONFIG = {
 	:starting_weapons => 1..10,
 
 	:color => true,
-	:markers => true
+	:markers => false
 }
