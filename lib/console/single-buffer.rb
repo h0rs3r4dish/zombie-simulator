@@ -26,9 +26,9 @@ class Console
 			(if new_color.to_s.include? 'bright_' then
 				new_color = new_color.to_s.sub('bright_','').intern
 				'1;'
-			else '0' end) + (case new_color
+			else '0;' end) + (case new_color
 			when :default
-				'0;'
+				'0'
 			when :white
 				'37'
 			when :red

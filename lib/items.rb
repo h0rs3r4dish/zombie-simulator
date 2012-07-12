@@ -1,26 +1,37 @@
 module ZedSim
 
 class Item
-	attr_reader :name, :symbol
-	def initialize(name, symbol)
+	attr_reader :name, :type, :symbol
+	def initialize(name, type, symbol)
 		@name = name
+		@type = type
 		@symbol = symbol
 	end
-	def to_c; @symbol; end
-end
-
-class Weapon < Item
-	attr_reader :range, :accuracy, :damage
-	def initialize(name, range, accuracy, damage)
-		super name, ((range > 1) ? '+' : '/')
-		@range = range
-		@accuracy = accuracy
-		@damage = damage
+	def add_attr(*attributes)
+		if attributes.first.class.to_s == "Hash" then
+			attributes = attributes.first
+			add_attr *attributes.keys
+			attributes.each_pair { |key, val| self.send((key.to_s+'=').intern, val) }
+		else
+			attributes.each { |attribute|
+				getter = "@#{attribute}"
+				self.define_singleton_method attribute do
+					instance_variable_get getter
+				end
+				self.define_singleton_method (attribute.to_s+'=').intern do |val|
+					instance_variable_set getter, val
+				end
+			}
+		end
 	end
 
+	def to_c; @symbol; end
+
 	class << self
-		def generate
-			self.new("Machete", 1, 1.0, 100)
+		def new_weapon(name, symbol, accuracy)
+			weapon = self.new(name, :weapon, symbol)
+			weapon.add_attr :accuracy => accuracy
+			return weapon
 		end
 	end
 end

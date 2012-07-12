@@ -2,6 +2,7 @@ require 'lib/console/single-buffer'
 require 'lib/map'
 require 'lib/human'
 require 'lib/zombie'
+require 'lib/items'
 
 module ZedSim
 
@@ -17,7 +18,7 @@ class Game
 		@creatures.count[:humans] = rand(CONFIG[:starting_humans].last) +
 			CONFIG[:starting_humans].first
 		@creatures.count[:humans].times { 
-			loc = [rand(80), rand(24)]
+			loc = random_coordinates :for => :creature
 			@creatures << Human.new(@map, @creatures, loc)
 			@map[*loc].creature = @creatures.last
 		}
@@ -25,9 +26,14 @@ class Game
 		@creatures.count[:zombies] = rand(CONFIG[:starting_zombies].last) +
 			CONFIG[:starting_zombies].first
 		@creatures.count[:zombies].times { 
-			loc = [rand(80), rand(24)]
+			loc = random_coordinates :for => :creature
 			@creatures << Zombie.new(@map, @creatures, loc)
 			@map[*loc].creature = @creatures.last
+		}
+
+		(rand(CONFIG[:starting_weapons].last) + CONFIG[:starting_weapons].first).times {
+			@map[*random_coordinates(:for => :item)].items << Item.new_weapon(
+				"Machete", "/", 100)
 		}
 
 		game_loop
@@ -66,6 +72,15 @@ class Game
 		@console.on_key :blocking => true do
 			exit
 		end
+	end
+
+	def random_coordinates(h)
+		coords = nil
+		begin
+			coords = [ rand(CONFIG[:map].first), rand(CONFIG[:map].last) ]
+		end while (h[:for] == :creature and not @map[*coords].creature.nil?) or
+			(h[:for] == :item and not @map[*coords].items.empty?)
+		return coords
 	end
 end
 

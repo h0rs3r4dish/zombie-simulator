@@ -49,12 +49,14 @@ class Tile
 	end
 
 	def include_weapon?
-		@items.each { |item| return true if item.class.to_s == "Weapon" }
+		@items.each { |item| return true if item.type == :weapon }
 		return false
 	end
 
 	def color
-		(@creature.nil?) ? @color : @creature.color
+		return @creature.color unless @creature.nil?
+		return :default unless @items.empty?
+		return @color
 	end
 	def to_s
 		return @creature.to_c unless @creature.nil?
