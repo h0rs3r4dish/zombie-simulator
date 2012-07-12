@@ -56,7 +56,7 @@ class Human < Creature
 				tile.creature }.delete_if { |val| val.nil? }.select { |creature|
 				creature.status == :zombie }.shuffle.first
 			unless touchable_zombie.nil? then
-				touchable_zombie.die
+				touchable_zombie.die if rand(100) < @pack.weapon.accuracy
 			end
 		end
 
@@ -132,8 +132,25 @@ class Human < Creature
 			has
 		}.each { |tile| tile.each { |factor| facing[factor] += 1 } }
 
+		banned_directions = Array.new
+		if @location.first == 0 then
+			banned_directions << :west
+		elsif @location.first == @map.width - 1 then
+			banned_directions << :east
+		end
+		if @location.last == 0 then
+			banned_directions << :north
+			banned_directions << :northwest if banned_directions.include? :west
+			banned_directions << :northeast if banned_directions.include? :east
+		elsif @location.last == @map.height - 1 then
+			banned_directions << :south
+			banned_directions << :southwest if banned_directions.include? :west
+			banned_directions << :southeast if banned_directions.include? :east
+		end
+
 		ordered = Array.new
-		@brain.directions.each_pair { |direction, factors|
+		@brain.directions.delete_if { |direction, factors|
+			banned_directions.include? direction }.each_pair { |direction, factors|
 			ordered << [ direction, (factors.to_a.inject(0) { |total, factor|
 				total + (factor.last * lean[factor.first]) }) ] }
 		@facing = ordered.sort { |a, b| a.last <=> b.last }.select { |i|

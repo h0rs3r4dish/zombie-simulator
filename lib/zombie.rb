@@ -6,7 +6,7 @@ module ZedSim
 class Zombie < Creature
 	SYMBOL = 'Z'
 
-	MOVEMENT_RATE = 0.75
+	MOVEMENT_RATE = 0.80
 	MOVEMENT_NEEDED = 1
 
 	def initialize(map, creature_list, location, human_source=nil)
@@ -33,7 +33,7 @@ class Zombie < Creature
 			creature.status == :alive }.shuffle.first
 
 		unless touchable_human.nil? then
-			touchable_human.infect
+			attack touchable_human 
 			return
 		end
 
@@ -43,6 +43,14 @@ class Zombie < Creature
 			distance_from(a) <=> distance_from(b) }.first
 
 		if nearest_human.nil? then
+			unless @objective.nil? then
+				if @location != @objective then
+					move_toward *@objective
+					return
+				else
+					@objective = nil
+				end
+			end
 			coinflip = rand 4 # 0 = no move, 1-2 = follow @facing, 3 = random
 			return if coinflip == 0
 			if coinflip == 3 then
@@ -63,6 +71,18 @@ class Zombie < Creature
 		tile.creature = nil
 	end
 
+	def attack(human)
+		human.infect if rand(3) == 1
+		@map.tiles_near(*@location, 7).flatten.each { |tile|
+			creature = tile.creature
+			next if creature.nil?
+			next unless creature.status == :zombie
+			creature.alert human.location
+		}
+	end
+	def alert(loc)
+		@objective = loc
+	end
 end
 
 end
