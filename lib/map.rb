@@ -68,7 +68,7 @@ class Tile
 
 	def color
 		return @creature.color unless @creature.nil?
-		return :default unless @items.empty?
+		return @items.first.color unless @items.empty?
 		return @color
 	end
 	def to_s

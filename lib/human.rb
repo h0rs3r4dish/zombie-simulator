@@ -13,6 +13,8 @@ class Human < Creature
 			:weapon => nil,
 			:equipment => []
 		}.to_struct
+
+		# Brain
 		@brain = Hash.new.to_struct
 
 		@brain.directions = Hash.new
@@ -36,11 +38,16 @@ class Human < Creature
 		@brain.objective = nil
 
 		@facing = @brain.directions.keys.shuffle.first
-		@bleeding = false
+
+		# Condition
+		@condition = Hash.new.to_struct
+		@condition.infected = false
+		@condition.bleeding = false
+		@condition.stance	= :standing
 	end
 
 	def tick
-		if @status == :infected then
+		if @condition.infected then
 			log "##{@id.to_s 16} infection level #{@brain.infection}"
 			@brain.infection -= 1
 			if @brain.infection == 0
@@ -49,7 +56,7 @@ class Human < Creature
 			end
 		end
 
-		bleed if @bleeding and rand(5) < 3
+		bleed if @condition.bleeding and rand(5) < 3
 
 		@brain.objective = @brain.priorities.pop if @brain.objective.nil?
 		log "##{@id.to_s 16} obj: #{@brain.objective.inspect}"
@@ -152,7 +159,7 @@ class Human < Creature
 
 	def move_best_direction(changes={})
 		lean = {
-			:zombies => -1,
+			:zombies => -((@condition.infected) ? 2 : 1),
 			:humans  => (@brain.personality.include? :smart) ? 1 : 0,
 			:weapons => 0
 		}
@@ -194,8 +201,9 @@ class Human < Creature
 			banned_directions.include? direction }.each_pair { |direction, factors|
 			ordered << [ direction, (factors.to_a.inject(0) { |total, factor|
 				total + (factor.last * lean[factor.first]) }) ] }
-		@facing = ordered.sort { |a, b| a.last <=> b.last }.select { |i|
-			i.last == ordered.first.last }.shuffle.first.first
+		ordered = ordered.sort { |a, b| a.last <=> b.last }.select { |i|
+			i.last == ordered.first.last }.shuffle.first
+		@facing = ordered.first unless ordered.nil?
 		move_along_facing
 	end
 
@@ -210,7 +218,7 @@ class Human < Creature
 		objective_shelve Objective.new(:goto, loc)
 	end
 	def attack(creature)
-		alert_in_area creature.location, 5, [:alive,:infected], :attack
+		alert_in_area creature.location, 5, :alive, :attack
 		if rand < @pack.weapon.accuracy then
 			dmg = rand_range @pack.weapon.damage
 			log "##{@id.to_s 16} hit ##{creature.id.to_s 16} for #{dmg} damage"
@@ -227,11 +235,11 @@ class Human < Creature
 	end
 
 	def infect
-		alert_in_area @location, 5, [:alive,:infected], :defend
+		alert_in_area @location, 5, :alive, :defend
 		@brain.infection = rand(19) + 1
-		@status = :infected
+		@condition.infected = true
 		@color = :bright_yellow
-		@bleeding = true
+		@condition.bleeding = true
 		@creature_list.count[:zombies] += 1
 	end
 	def turn_to_zombie

@@ -40,13 +40,29 @@ class Creature
 				 else
 					 0
 				 end
+		step_coords = [@location.first + step_x, @location.last + step_y]
+
+		unless @map[*step_coords].creature.nil? then
+			near_loc  = @map.tiles_near(*step_coords, 1).flatten
+			near_self = @map.tiles_near(*@location, 1).flatten
+			alternatives = Array.new
+			near_self.each { |s_tile| near_loc.each { |l_tile|
+					alternatives << s_tile.location if s_tile.location == l_tile.location
+			} }
+			alternatives.shuffle.each { |alt|
+				if @map[*alt].creature.nil? then
+					step_coords = alt
+					break
+				end
+			}
+		end
 
 		new_facing = [ [ :northwest, :north, :northeast ],
 			[ :west, nil, :east ],
 			[ :southwest, :south, :southeast ] ][1 + step_y][1 + step_x]
 		@facing = new_facing unless new_facing.nil?
 		
-		move_to @location.first + step_x, @location.last + step_y
+		move_to *step_coords
 	end
 	def move_to(x,y)
 		return unless @map[x,y].creature.nil?
@@ -131,7 +147,7 @@ class Creature
 	end
 	def die
 		remove_self
-		corpse = Item.new("Corpse of #{@id.to_s 16}", :corpse, "%")
+		corpse = Item.new("Corpse of #{@id.to_s 16}", :corpse, "%", @color)
 		@map[*@location].items << corpse
 	end
 	def remove_self

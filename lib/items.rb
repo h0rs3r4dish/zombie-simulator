@@ -1,11 +1,12 @@
 module ZedSim
 
 class Item
-	attr_reader :name, :type, :symbol
-	def initialize(name, type, symbol)
+	attr_reader :name, :type, :symbol, :color
+	def initialize(name, type, symbol, color=:white)
 		@name = name
 		@type = type
 		@symbol = symbol
+		@color = color
 	end
 	def add_attr(*attributes)
 		if attributes.first.class.to_s == "Hash" then
