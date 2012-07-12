@@ -41,13 +41,15 @@ class Human < Creature
 
 	def tick
 		if @status == :infected then
-			log "##{@id} infection level #{@brain.infection}"
+			log "##{@id.to_s 16} infection level #{@brain.infection}"
 			@brain.infection -= 1
 			if @brain.infection == 0
 				turn_to_zombie
 				return
 			end
 		end
+
+		log "##{@id.to_s 16} obj: #{@brain.objective.inspect}"
 
 		bleed if @bleeding and rand(5) < 3
 
@@ -206,7 +208,7 @@ class Human < Creature
 	end
 	def attack(creature)
 		alert_in_area creature.location, 5, [:alive,:infected], :attack
-		creature.attack(rand_range @pack.weapon.damage) if rand(100) < @pack
+		creature.damage(rand_range @pack.weapon.damage) if rand(100) < @pack
 			.weapon.accuracy
 	end
 
