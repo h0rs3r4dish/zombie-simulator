@@ -64,11 +64,9 @@ class Zombie < Creature
 	end
 
 	def die
-		@creature_list.delete self
+		remove_self
 		corpse = Item.new("Corpse", :body, "%")
-		tile = @map[*@location]
-		tile.items << corpse
-		tile.creature = nil
+		@map[*@location].items << corpse
 	end
 
 	def attack(human)
@@ -82,6 +80,25 @@ class Zombie < Creature
 	end
 	def alert(loc)
 		@objective = loc
+
+		return unless CONFIG[:markers]
+		marker_y = @location.last - 1
+		return if marker_y < 0
+		marker = AlertMarker.new(@map, @creature_list, [@location.first, marker_y])
+		@creature_list.unshift marker
+	end
+end
+
+class AlertMarker < Creature
+	SYMBOL = '!'
+	def initialize(*args)
+		super *args
+		@life = 1
+		@color = :bright_white
+		@status = :temporary
+	end
+	def tick
+		remove_self
 	end
 end
 

@@ -20,7 +20,6 @@ class Game
 		@creatures.count[:humans].times { 
 			loc = random_coordinates :for => :creature
 			@creatures << Human.new(@map, @creatures, loc)
-			@map[*loc].creature = @creatures.last
 		}
 
 		@creatures.count[:zombies] = rand(CONFIG[:starting_zombies].last) +
@@ -28,7 +27,6 @@ class Game
 		@creatures.count[:zombies].times { 
 			loc = random_coordinates :for => :creature
 			@creatures << Zombie.new(@map, @creatures, loc)
-			@map[*loc].creature = @creatures.last
 		}
 
 		(rand(CONFIG[:starting_weapons].last) + CONFIG[:starting_weapons].first).times {

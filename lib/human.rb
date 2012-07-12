@@ -165,10 +165,9 @@ class Human < Creature
 	end
 
 	def turn_to_zombie
+		remove_self
 		zed = Zombie.new(@map, @creature_list, @location, self)
-		@creature_list.delete self
 		@creature_list.push zed
-		@map[*@location].creature = zed
 		@creature_list.count[:humans] -= 1
 		@creature_list.count[:zombies] += 1
 	end

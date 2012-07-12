@@ -5,5 +5,6 @@ CONFIG = {
 	:starting_zombies => 1..10,
 	:starting_weapons => 1..10,
 
-	:color => true
+	:color => true,
+	:markers => true
 }

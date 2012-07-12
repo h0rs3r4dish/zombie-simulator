@@ -19,6 +19,8 @@ class Creature
 		@id = @@id += 1
 		@facing = :north
 		@color = :white
+
+		@map[*@location].creature = self
 	end
 
 	def move_toward(target_x,target_y)
@@ -108,6 +110,11 @@ class Creature
 					@map.height - 1) )
 			@map[x_range,y_range]
 		end
+	end
+
+	def remove_self
+		@map[*@location].creature = nil
+		@creature_list.delete self
 	end
 
 	def distance_from(other)
