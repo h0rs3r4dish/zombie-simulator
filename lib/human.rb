@@ -20,21 +20,22 @@ class Human < Creature
 			[:stupid, :smart].shuffle.first,
 			[:aggressive, :cowardly].shuffle.first
 		]
-
 		
 		@brain.objectives = Array.new
 	end
 
 	def tick
 		if @status == :infected then
+			log "##{@id} infection level #{@brain.infection}"
 			@brain.infection -= 1
+			@map[*@location].color = :bright_red if rand(3) != 2
 			if @brain.infection == 0
 				turn_to_zombie
 				return
 			end
 		end
 
-		weights = {
+		weight = {
 			:zombie => -1,
 			:human  => (@brain.personality.include? :smart) ? 1 : 0,
 			:weapon => (((@brain.personality.include? :aggressive) ? 1 : 0) +
@@ -54,8 +55,8 @@ class Human < Creature
 		# Move in the safest direction
 		@brain.directions[@facing] = line_of_sight.flatten.inject(0) { |save, tile|
 			save + ((tile.creature.nil?) ? 0 : (
-				(tile.creature == :zombie) ? weights[:zombie] : weights[:human])) +
-				((tile.include_weapon?) ? weights[:weapon] : 0)
+				(tile.creature.status == :zombie) ? weight[:zombie] : weight[:human])) +
+				((tile.include_weapon?) ? weight[:weapon] : 0)
 		}
 
 		move_in_best_direction
@@ -69,8 +70,9 @@ class Human < Creature
 	end
 
 	def infect
-		@brain.infection = rand 10
+		@brain.infection = rand(19) + 1
 		@status = :infected
+		@color = :yellow
 	end
 
 	def turn_to_zombie

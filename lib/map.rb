@@ -10,7 +10,6 @@ class Map
 	end
 
 	def [](x,y)
-		log "[%s,%s] on %s,%s" % [x,y,@width,@height]
 		if y.class.to_s == "Fixnum" then
 			@grid[y][x]
 		elsif y.class.to_s == "Range" then
@@ -22,13 +21,13 @@ class Map
 			  Range.new((y-size).min(0),(y+size).max(@height - 1)) ]
 	end
 
-	def each(&block); self.to_a.each &block; end
-	def each(&block); self.to_a.each &block; end
+	def each(&block); @grid.map &block; end
+	def each(&block); @grid.each &block; end
 
 	def to_a
 		@grid.map { |row| row.map { |tile| tile.to_s }.join('') }
 	end
-	def to_s
+	def to_s(opts)
 		to_a.join("\n")
 	end
 end
@@ -39,14 +38,14 @@ class Tile
 	}
 
 	attr_reader :type, :elevation, :items
-	attr_accessor :creature
+	attr_accessor :creature, :color
 
 	def initialize(type, elevation=0)
 		@type = type
 		@elevation = 0
 		@creature = nil
 		@items = []
-		@color = :white
+		@color = :default
 	end
 
 	def include_weapon?

@@ -1,4 +1,4 @@
-require 'lib/console'
+require 'lib/console/single-buffer'
 require 'lib/map'
 require 'lib/human'
 require 'lib/zombie'
@@ -45,7 +45,13 @@ class Game
 
 			game_end if @creatures.count.values.include? 0
 
-			@map.each { |row| @console[row] }
+			if CONFIG[:color] then
+				@map.each { |row| row.each { |tile|
+					@console.color tile.color; @console[tile]
+				} }
+			else
+				@map.each { |row| @console[row.to_s] }
+			end
 			@console.draw
 		end
 	end

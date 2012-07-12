@@ -76,7 +76,6 @@ class Creature
 						(@location.last + offset).max(@map.height - 1)
 				) ]
 			}
-			log result.inspect
 			return result
 		when :east, :west
 			cols = (0..vision).to_a.map { |width|

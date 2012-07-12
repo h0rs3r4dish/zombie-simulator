@@ -34,7 +34,6 @@ class Console
 	def text(x,y,str)
 		@changed = true
 		str = str[0..(@buffer.width - x - 1)] if str.length + x >= @buffer.width
-		LOGFILE.puts y, x + str.length - 1
 		@buffer[y][x..(x + str.length - 1)] = str
 		if (@cursor.x += str.length) >= @buffer.width then
 			@cursor.y = y + 1
