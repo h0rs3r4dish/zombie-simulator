@@ -4,7 +4,7 @@ require 'lib/patch/hash'
 module ZedSim
 
 class Human < Creature
-	attr_reader :pack
+	attr_reader :pack, :condition
 
 	def initialize(*args)
 		super *args
@@ -56,7 +56,10 @@ class Human < Creature
 			end
 		end
 
-		bleed if @condition.bleeding and rand(5) < 3
+		if @condition.bleeding then
+			bleed if rand(5) < 3
+			@condition.bleeding = false if rand(5) < 2
+		end
 
 		@brain.objective = @brain.priorities.pop if @brain.objective.nil?
 		log "##{@id.to_s 16} obj: #{@brain.objective.inspect}"

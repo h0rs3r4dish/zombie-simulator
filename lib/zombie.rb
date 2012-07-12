@@ -70,13 +70,10 @@ class Zombie < Creature
 		@health -= n
 		die if @health < 1
 	end
-	def die
-		corpse = super
-		corpse.color = :green
-	end
 
 	def attack(human)
 		alert_in_area human.location, 7, :zombie
+		human.condition.bleeding = true if rand(2) == 0
 		return unless rand(3) == 0
 		human.infect
 	end
