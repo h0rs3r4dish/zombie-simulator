@@ -1,3 +1,4 @@
+require 'lib/patch/helpers'
 require 'lib/console/single-buffer'
 require 'lib/map'
 require 'lib/human'
@@ -15,23 +16,20 @@ class Game
 		@creatures.instance_variable_set :@count, { :zombies => 0, :humans => 0 }
 		def @creatures.count; @count; end
 
-		@creatures.count[:humans] = rand(CONFIG[:starting_humans].last) +
-			CONFIG[:starting_humans].first
+		@creatures.count[:humans] = rand_range CONFIG[:starting_humans]
 		@creatures.count[:humans].times { 
 			loc = random_coordinates :for => :creature
 			@creatures << Human.new(@map, @creatures, loc)
 		}
 
-		@creatures.count[:zombies] = rand(CONFIG[:starting_zombies].last) +
-			CONFIG[:starting_zombies].first
+		@creatures.count[:zombies] = rand_range CONFIG[:starting_zombies]
 		@creatures.count[:zombies].times { 
 			loc = random_coordinates :for => :creature
 			@creatures << Zombie.new(@map, @creatures, loc)
 		}
 
-		(rand(CONFIG[:starting_weapons].last) + CONFIG[:starting_weapons].first).times {
-			@map[*random_coordinates(:for => :item)].items << Item.new_weapon(
-				"Machete", "/", 100)
+		rand_range(CONFIG[:starting_weapons]).times {
+			@map[*random_coordinates(:for => :item)].items << Item.new_random_weapon
 		}
 
 		game_loop

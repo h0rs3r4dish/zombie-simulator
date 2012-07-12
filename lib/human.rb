@@ -30,8 +30,8 @@ class Human < Creature
 		@brain.priorities = [ Objective.new(:survive) ]
 		@brain.priorities.push Objective.new(:find_group) if @brain.personality.
 			include? :smart
-		@brain.priorities.push Objective.new(:find_weapon) if @brain.personality.
-			include? :aggressive
+		@brain.priorities.push Objective.new(:find_weapon)# if @brain.personality.
+			#include? :aggressive
 		
 		@brain.objective = nil
 
@@ -53,13 +53,20 @@ class Human < Creature
 
 		@brain.objective = @brain.priorities.pop if @brain.objective.nil?
 
+		surrounding_tiles = @map.tiles_near(*@location, 1).flatten
+
 		unless @pack.weapon.nil? then
-			touchable_zombie = @map.tiles_near(*@location, 1).flatten.map { |tile|
+			touchable_zombie = surrounding_tiles.map { |tile|
 				tile.creature }.delete_if { |val| val.nil? }.select { |creature|
 				creature.status == :zombie }.shuffle.first
 			unless touchable_zombie.nil? then
-				alert_in_area touchable_zombie.location, 5, [:alive,:infected], :attack
-				touchable_zombie.die if rand(100) < @pack.weapon.accuracy
+				attack touchable_zombie
+			end
+		else
+			if @brain.priorities.include? :find_weapon then
+				touchable_weapon = surrounding_tiles.select { |tile|
+					tile.include_weapon? }.shuffle.first
+				pick_up_item(:weapon, touchable_weapon) unless touchable_weapon.nil?
 			end
 		end
 
@@ -79,16 +86,22 @@ class Human < Creature
 				objective_next
 			end
 		when :find_weapon
+			unless @pack.weapon.nil? then
+				@brain.objective = Objective.new(:hunt_zombies) if @brain.personality.
+					include? :aggressive
+				return
+			end
 			nearest_weapon = line_of_sight.flatten.select { |tile| 
 				tile.include_weapon? }.sort { |tile_a, tile_b|
 				distance_from(tile_a) <=> distance_from(tile_b) }.first
 			if nearest_weapon.nil? then
-				move_best_direction
+				move_best_direction :weapons => 2
 			else
 				if distance_from(nearest_weapon) < 2 then
-					weapon = @map[*nearest_weapon.location].items.pop_weapon
-					@pack.weapon = weapon
-					objective_next
+					pick_up_item :weapon, nearest_weapon
+					@brain.objective = Objective.new(:hunt_zombies) if @brain.
+						personality.include?(:aggresive) and @brain.personality.
+						include?(:stupid)
 				else
 					objective_shelve Objective.new(:goto, nearest_weapon.location)
 					move_toward *@brain.objective.location
@@ -100,6 +113,22 @@ class Human < Creature
 			else
 				objective_next
 			end
+		when :hunt_zombies
+			if @pack.weapon.nil? then
+				objective_shelve Objective.new(:find_weapon)
+			else
+				target_zombie = @map.tiles_near(*@location, @pack.weapon.range).flatten.
+					map { |tile| tile.creature }.delete_if { |c| c.nil? }.select { |c|
+					c.status == :zombie }.sort { |zed_a, zed_b|
+					distance_from(zed_a) <=> distance_from(zed_b) }.first
+				if target_zombie.nil? then
+					move_best_direction :zombies => 1, :humans => (
+						(@brain.personality.include? :smart) ? 1 : 0)
+				else
+					attack(target_zombie) unless target_zombie.nil?
+				end
+			end
+
 		end
 	end
 
@@ -174,6 +203,19 @@ class Human < Creature
 			return if @pack.weapon.nil?
 		end
 		objective_shelve Objective.new(:goto, loc)
+	end
+	def attack(creature)
+		alert_in_area creature.location, 5, [:alive,:infected], :attack
+		creature.attack(rand_range @pack.weapon.damage) if rand(100) < @pack
+			.weapon.accuracy
+	end
+
+	def pick_up_item(type, tile)
+		case type
+		when :weapon
+			weapon = tile.items.pop_weapon
+			@pack.weapon = weapon
+		end
 	end
 
 	def infect

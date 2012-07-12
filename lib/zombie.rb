@@ -22,6 +22,7 @@ class Zombie < Creature
 			human_source.pack.equipment.each { |item|
 				@map[*@location].items << item }
 		end
+		@health = 10
 	end
 
 	def tick
@@ -62,6 +63,12 @@ class Zombie < Creature
 		else
 			move_toward *nearest_human.location
 		end
+	end
+
+	def damage(n)
+		bleed
+		@health -= n
+		die if @health < 1
 	end
 
 	def attack(human)

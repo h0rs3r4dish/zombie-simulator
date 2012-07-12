@@ -28,10 +28,19 @@ class Item
 	def to_c; @symbol; end
 
 	class << self
-		def new_weapon(name, symbol, accuracy)
+		WEAPON_TYPES = [
+			[ "Machete", '/', 2..5, 0.8, 1 ],
+			[ "Axe", '/', 5..10, 0.6, 1 ],
+			[ "Pistol", '+', 5..10, 0.5, 4 ]
+		]
+		def new_weapon(name, symbol, damage, accuracy, range=1)
 			weapon = self.new(name, :weapon, symbol)
-			weapon.add_attr :accuracy => accuracy
+			weapon.add_attr :damage => damage, :accuracy => accuracy, :range => range
 			return weapon
+		end
+
+		def new_random_weapon
+			new_weapon *WEAPON_TYPES.shuffle.first
 		end
 	end
 end
