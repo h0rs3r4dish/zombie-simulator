@@ -68,15 +68,14 @@ class Creature
 		vision = self.class.const_get :VISION_LENGTH
 		case @facing
 		when :north, :south
-			result = (0..vision).to_a.map { |offset|
+			(0..vision).to_a.map { |offset|
 				@map[ (@location.first + ((@facing == :north) ? -offset : offset)).
 					min(0).max(@map.height - 1),
 					Range.new(
 						(@location.last - offset).min(0),
 						(@location.last + offset).max(@map.height - 1)
 				) ]
-			}
-			return result
+			}.delete_if { |tile| tile.nil? }
 		when :east, :west
 			cols = (0..vision).to_a.map { |width|
 				(
@@ -99,7 +98,7 @@ class Creature
 			cols.each_with_index { |row, x| row.each_with_index { |tile, y|
 				rows[y][x] = tile
 			} }
-			rows.each { |col| col.delete nil }
+			rows.map { |col| col.delete_if { |tile| tile.nil? } }
 		when :northeast, :northwest, :southeast, :southwest
 			x_range = Range.new( @location.first, (@location.first + (
 				(@facing.to_s.include? 'south') ? -vision : vision)).min(0).max(
@@ -112,6 +111,7 @@ class Creature
 	end
 
 	def distance_from(other)
+		log "Evaluating #{other.inspect} (locaiton: #{other.location.inspect}"
 		Math.sqrt(
 			(@location.first - other.location.first) ** 2 +
 			(@location.last  - other.location.last) ** 2

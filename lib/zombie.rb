@@ -14,7 +14,13 @@ class Zombie < Creature
 		@status = :zombie
 		@movement = 0
 		@color = :green
-		@facing = human_source.facing unless human_source.nil?
+		unless human_source.nil? then
+			@facing = human_source.facing
+			@map[*@location].items << human_source.pack.weapon unless human_source.
+				pack.weapon.nil?
+			human_source.pack.equipment.each { |item|
+				@map[*@location].items << item }
+		end
 	end
 
 	def tick
@@ -51,7 +57,7 @@ class Zombie < Creature
 
 	def die
 		@creature_list.delete self
-		corpse = Item.new("Corpse", "%")
+		corpse = Item.new("Corpse", :body, "%")
 		tile = @map[*@location]
 		tile.items << corpse
 		tile.creature = nil

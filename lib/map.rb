@@ -4,7 +4,10 @@ class Map
 	attr_reader :width, :height
 
 	def initialize(width=80,height=24)
-		@grid = Array.new(height).map { Array.new(width) { Tile.new(:ground) } }
+		@grid = Array.new(height).map { Array.new(width) }
+		(0...height).each { |y| (0...width).each { |x|
+			@grid[y][x] = Tile.new(:ground, [x,y])
+		} }
 		@width = width
 		@height = height
 	end
@@ -27,7 +30,7 @@ class Map
 	def to_a
 		@grid.map { |row| row.map { |tile| tile.to_s }.join('') }
 	end
-	def to_s(opts)
+	def to_s
 		to_a.join("\n")
 	end
 end
@@ -37,15 +40,25 @@ class Tile
 		:ground => '.'
 	}
 
-	attr_reader :type, :elevation, :items
-	attr_accessor :creature, :color
+	attr_reader :type, :location, :elevation
+	attr_accessor :creature, :color, :items
 
-	def initialize(type, elevation=0)
+	def initialize(type, coords, elevation=0)
 		@type = type
+		@location = coords
 		@elevation = 0
 		@creature = nil
-		@items = []
 		@color = :default
+
+		@items = []
+		def @items.pop_weapon
+			self.each_with_index { |item, i|
+				if item.type == :weapon then
+					self.delete_at i
+					return item
+				end
+			}
+		end
 	end
 
 	def include_weapon?
@@ -62,6 +75,10 @@ class Tile
 		return @creature.to_c unless @creature.nil?
 		return @items.first.to_c unless @items.empty? 
 		return SYMBOLS[@type]
+	end
+	def inspect
+		"#<Tile @location=#{@location.inspect} @creature=#{@creature.inspect} @items=#{
+			@items.inspect}>"
 	end
 end
 

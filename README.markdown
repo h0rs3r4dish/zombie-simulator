@@ -13,7 +13,10 @@ Checklist
  * Zombie hunting of Humans (done)
  * Simulation end when there are no zombies or no humans left (done)
  * Human avoidence of Zombies and banding together (done)
- * Items, both implementation and generation
+ * Weapons, both implementation and generation
+   * Melee
+   * Guns
+ * Advanced zombie hunting: moving towards gunshots and attack(ed|ing) zombies
  * Humans fighting Zombies with weapons
  * More complex combat
 
