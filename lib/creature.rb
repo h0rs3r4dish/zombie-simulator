@@ -153,7 +153,8 @@ class Creature
 	def remove_self
 		@map[*@location].creature = nil
 		@creature_list.delete self
-		list = if [:alive, :infected].include? @status then
+		return unless [:alive, :zombies].include? @status
+		list = if @status == :alive
 				   :humans
 			   else
 				   :zombies

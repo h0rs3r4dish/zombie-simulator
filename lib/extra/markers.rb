@@ -5,7 +5,7 @@ class AlertMarker < Creature
 	def initialize(*args)
 		super *args
 		@life = 1
-		@color = :bright_white
+		@color = :bright_blue
 		@status = :temporary
 	end
 	def tick
