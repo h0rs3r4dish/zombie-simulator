@@ -49,11 +49,10 @@ class Human < Creature
 			end
 		end
 
-		log "##{@id.to_s 16} obj: #{@brain.objective.inspect}"
-
 		bleed if @bleeding and rand(5) < 3
 
 		@brain.objective = @brain.priorities.pop if @brain.objective.nil?
+		log "##{@id.to_s 16} obj: #{@brain.objective.inspect}"
 
 		surrounding_tiles = @map.tiles_near(*@location, 1).flatten
 
@@ -69,6 +68,7 @@ class Human < Creature
 				touchable_weapon = surrounding_tiles.select { |tile|
 					tile.include_weapon? }.shuffle.first
 				pick_up_item(:weapon, touchable_weapon) unless touchable_weapon.nil?
+				@brain.priorities.delete :find_weapon
 			end
 		end
 
@@ -101,16 +101,19 @@ class Human < Creature
 			else
 				if distance_from(nearest_weapon) < 2 then
 					pick_up_item :weapon, nearest_weapon
-					@brain.objective = Objective.new(:hunt_zombies) if @brain.
-						personality.include?(:aggresive) and @brain.personality.
-						include?(:stupid)
+					if @brain.personality.include?(:aggresive) and @brain.personality.
+						include?(:stupid) then
+						@brain.objective = Objective.new(:hunt_zombies)
+					else
+						objective_next
+					end
 				else
 					objective_shelve Objective.new(:goto, nearest_weapon.location)
 					move_toward *@brain.objective.location
 				end
 			end
 		when :goto
-			if @location != location then
+			if @location != @brain.objective.location then
 				move_toward *@brain.objective.location
 			else
 				objective_next
@@ -208,8 +211,11 @@ class Human < Creature
 	end
 	def attack(creature)
 		alert_in_area creature.location, 5, [:alive,:infected], :attack
-		creature.damage(rand_range @pack.weapon.damage) if rand(100) < @pack
-			.weapon.accuracy
+		if rand < @pack.weapon.accuracy then
+			dmg = rand_range @pack.weapon.damage
+			log "##{@id.to_s 16} hit ##{creature.id.to_s 16} for #{dmg} damage"
+			creature.damage dmg
+		end
 	end
 
 	def pick_up_item(type, tile)
@@ -226,13 +232,12 @@ class Human < Creature
 		@status = :infected
 		@color = :bright_yellow
 		@bleeding = true
+		@creature_list.count[:zombies] += 1
 	end
 	def turn_to_zombie
 		remove_self
 		zed = Zombie.new(@map, @creature_list, @location, self)
 		@creature_list.push zed
-		@creature_list.count[:humans] -= 1
-		@creature_list.count[:zombies] += 1
 	end
 
 	def inspect

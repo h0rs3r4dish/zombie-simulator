@@ -137,6 +137,13 @@ class Creature
 	def remove_self
 		@map[*@location].creature = nil
 		@creature_list.delete self
+		list = if [:alive, :infected].include? @status then
+				   :humans
+			   else
+				   :zombies
+			   end
+		log @creature_list.count.inspect
+		@creature_list.count[list] -= 1
 	end
 
 	def distance_from(other)

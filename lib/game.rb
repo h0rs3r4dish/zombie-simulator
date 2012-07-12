@@ -45,8 +45,6 @@ class Game
 				@console.getc if key == 'p'
 			end
 
-			game_end if @creatures.count.values.include? 0
-
 			if CONFIG[:color] then
 				@map.each { |row| row.each { |tile|
 					@console.color tile.color; @console[tile]
@@ -55,6 +53,8 @@ class Game
 				@map.each { |row| @console[row.to_s] }
 			end
 			@console.draw
+
+			game_end if @creatures.count.values.include? 0
 		end
 	end
 	def game_end
