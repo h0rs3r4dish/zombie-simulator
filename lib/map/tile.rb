@@ -1,40 +1,5 @@
 module ZedSim
 
-class Map
-	attr_reader :width, :height
-
-	def initialize(width=80,height=24)
-		@grid = Array.new(height).map { Array.new(width) }
-		(0...height).each { |y| (0...width).each { |x|
-			@grid[y][x] = Tile.new(:ground, [x,y])
-		} }
-		@width = width
-		@height = height
-	end
-
-	def [](x,y)
-		if y.class.to_s == "Fixnum" then
-			@grid[y][x]
-		elsif y.class.to_s == "Range" then
-			y.to_a.map { |row| @grid[row][x] }
-		end
-	end
-	def tiles_near(x,y,size)
-		self[ Range.new((x-size).min(0),(x+size).max(@width - 1)), 
-			  Range.new((y-size).min(0),(y+size).max(@height - 1)) ]
-	end
-
-	def each(&block); @grid.map &block; end
-	def each(&block); @grid.each &block; end
-
-	def to_a
-		@grid.map { |row| row.map { |tile| tile.to_s }.join('') }
-	end
-	def to_s
-		to_a.join("\n")
-	end
-end
-
 class Tile
 	SYMBOLS = {
 		:ground => '.'
@@ -43,9 +8,10 @@ class Tile
 	attr_reader :type, :location, :elevation
 	attr_accessor :creature, :color, :items
 
-	def initialize(type, coords, elevation=0)
+	def initialize(type, coords, passable=true, elevation=0)
 		@type = type
 		@location = coords
+		@passable = passable
 		@elevation = 0
 		@creature = nil
 		@color = :default
@@ -64,6 +30,9 @@ class Tile
 	def include_weapon?
 		@items.each { |item| return true if item.type == :weapon }
 		return false
+	end
+	def passable?
+		(@creature.nil?) ? @passable : false
 	end
 
 	def color

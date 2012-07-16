@@ -4,7 +4,7 @@ require 'lib/patch/hash'
 module ZedSim
 
 class Human < Creature
-	attr_reader :pack, :condition
+	attr_reader :pack
 
 	def initialize(*args)
 		super *args
@@ -16,33 +16,27 @@ class Human < Creature
 
 		# Brain
 		@brain = Hash.new.to_struct
-
 		@brain.directions = Hash.new
 		[ :north, :east, :south, :west, :northeast, :southeast, :southwest,
 			:northwest ].each { |direction|
 			@brain.directions[direction] = { :zombies => 0, :humans => 0,
 				:weapons => 0 }
 		}
-
 		@brain.personality = [
 			[:stupid, :smart].shuffle.first,
 			[:aggressive, :cowardly].shuffle.first
 		]
-
 		@brain.priorities = [ Objective.new(:survive) ]
 		@brain.priorities.push Objective.new(:find_group) if @brain.personality.
 			include? :smart
 		@brain.priorities.push Objective.new(:find_weapon)# if @brain.personality.
 			#include? :aggressive
-		
 		@brain.objective = nil
+		@brain.ticks_without_zombie = 0
 
 		@facing = @brain.directions.keys.shuffle.first
 
 		# Condition
-		@condition = Hash.new.to_struct
-		@condition.infected = false
-		@condition.bleeding = false
 		@condition.stance	= :standing
 	end
 
@@ -56,21 +50,20 @@ class Human < Creature
 			end
 		end
 
-		if @condition.bleeding then
-			bleed if rand(5) < 3
-			@condition.bleeding = false if rand(5) < 2
-		end
+		bleed if @condition.bleeding and rand(5) < 3
 
 		@brain.objective = @brain.priorities.pop if @brain.objective.nil?
-		log "##{@id.to_s 16} obj: #{@brain.objective.inspect}"
+		log "##{@id.to_s 16} obj: #{@brain.objective.type}"
 
 		surrounding_tiles = @map.tiles_near(*@location, 1).flatten
+		sight = line_of_sight.flatten
 
 		unless @pack.weapon.nil? then
 			touchable_zombie = surrounding_tiles.map { |tile|
 				tile.creature }.delete_if { |val| val.nil? }.select { |creature|
 				creature.status == :zombie }.shuffle.first
 			unless touchable_zombie.nil? then
+				@brain.ticks_without_zombie = -1
 				attack touchable_zombie
 			end
 		else
@@ -84,9 +77,13 @@ class Human < Creature
 
 		case @brain.objective.type
 		when :survive
-			move_best_direction
+			if @brain.ticks_without_zombie < 5
+				move_best_direction
+			else
+				objective_shelve Objective.new(:find_group)
+			end
 		when :find_group
-			nearest_human = line_of_sight.flatten.delete_if { |tile|
+			nearest_human = sight.delete_if { |tile|
 				tile.creature.nil? }.select { |tile|
 				tile.creature.status != :zombie }.sort { |a, b|
 				distance_from(a) <=> distance_from(b) }.first
@@ -101,25 +98,25 @@ class Human < Creature
 			unless @pack.weapon.nil? then
 				@brain.objective = Objective.new(:hunt_zombies) if @brain.personality.
 					include? :aggressive
-				return
-			end
-			nearest_weapon = line_of_sight.flatten.select { |tile| 
-				tile.include_weapon? }.sort { |tile_a, tile_b|
-				distance_from(tile_a) <=> distance_from(tile_b) }.first
-			if nearest_weapon.nil? then
-				move_best_direction :weapons => 2
 			else
-				if distance_from(nearest_weapon) < 2 then
-					pick_up_item :weapon, nearest_weapon
-					if @brain.personality.include?(:aggresive) and @brain.personality.
-						include?(:stupid) then
-						@brain.objective = Objective.new(:hunt_zombies)
-					else
-						objective_next
-					end
+				nearest_weapon = sight.select { |tile| 
+					tile.include_weapon? }.sort { |tile_a, tile_b|
+					distance_from(tile_a) <=> distance_from(tile_b) }.first
+				if nearest_weapon.nil? then
+					move_best_direction :weapons => 2
 				else
-					objective_shelve Objective.new(:goto, nearest_weapon.location)
-					move_toward *@brain.objective.location
+					if distance_from(nearest_weapon) < 2 then
+						pick_up_item :weapon, nearest_weapon
+						if @brain.personality.include?(:aggresive) and @brain.personality.
+							include?(:stupid) then
+							@brain.objective = Objective.new(:hunt_zombies)
+						else
+							objective_next
+						end
+					else
+						objective_shelve Objective.new(:goto, nearest_weapon.location)
+						move_toward *@brain.objective.location
+					end
 				end
 			end
 		when :goto
@@ -132,19 +129,22 @@ class Human < Creature
 			if @pack.weapon.nil? then
 				objective_shelve Objective.new(:find_weapon)
 			else
-				target_zombie = @map.tiles_near(*@location, @pack.weapon.range).flatten.
-					map { |tile| tile.creature }.delete_if { |c| c.nil? }.select { |c|
+				target_zombie = sight.map { |tile| tile.creature }.delete_if { |c|
+					c.nil? }.select { |c| distance_from(c) <= @pack.weapon.range and 
 					c.status == :zombie }.sort { |zed_a, zed_b|
 					distance_from(zed_a) <=> distance_from(zed_b) }.first
 				if target_zombie.nil? then
 					move_best_direction :zombies => 1, :humans => (
 						(@brain.personality.include? :smart) ? 1 : 0)
 				else
-					attack(target_zombie) unless target_zombie.nil?
+					@brain.ticks_without_zombie = -1
+					attack target_zombie
 				end
 			end
 
 		end
+
+		@brain.ticks_without_zombie +=  1
 	end
 
 	def objective_shelve(replace_with=nil)
@@ -222,6 +222,7 @@ class Human < Creature
 	end
 	def attack(creature)
 		alert_in_area creature.location, 5, :alive, :attack
+		alert_in_area(@location, 5, :zombie, :attack) if @pack.weapon.range > 2
 		if rand < @pack.weapon.accuracy then
 			dmg = rand_range @pack.weapon.damage
 			log "##{@id.to_s 16} hit ##{creature.id.to_s 16} for #{dmg} damage"
@@ -249,6 +250,11 @@ class Human < Creature
 		remove_self
 		zed = Zombie.new(@map, @creature_list, @location, self)
 		@creature_list.push zed
+	end
+
+	def die
+		@color = :white
+		super
 	end
 
 	def inspect

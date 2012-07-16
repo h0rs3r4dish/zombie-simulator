@@ -7,7 +7,7 @@ module ZedSim
 class Zombie < Creature
 	SYMBOL = 'Z'
 
-	MOVEMENT_RATE = 0.80
+	MOVEMENT_RATE = 0.60
 	MOVEMENT_NEEDED = 1
 
 	def initialize(map, creature_list, location, human_source=nil)
@@ -22,7 +22,7 @@ class Zombie < Creature
 			human_source.pack.equipment.each { |item|
 				@map[*@location].items << item }
 		end
-		@health = 10
+		@condition.infected = true
 	end
 
 	def tick
@@ -30,9 +30,12 @@ class Zombie < Creature
 		return unless @movement > MOVEMENT_NEEDED
 		@movement -= MOVEMENT_NEEDED
 
+		bleed if @condition.bleeding
+
 		touchable_human = @map.tiles_near(*@location, 1).flatten.map { |tile|
 			tile.creature }.delete_if { |val| val.nil? }.select { |creature|
-			creature.status == :alive }.shuffle.first
+			creature.status == :alive and creature.condition.infected == false }.
+			shuffle.first
 
 		unless touchable_human.nil? then
 			attack touchable_human 
@@ -65,26 +68,15 @@ class Zombie < Creature
 		end
 	end
 
-	def damage(n)
-		bleed
-		@health -= n
-		die if @health < 1
-	end
-
 	def attack(human)
 		alert_in_area human.location, 7, :zombie
-		human.condition.bleeding = true if rand(2) == 0
-		return unless rand(3) == 0
-		human.infect
+		if rand(2) == 0 then
+			human.damage rand(3)+1
+			human.infect if rand(3) == 0
+		end
 	end
 	def alert(loc, type=nil)
 		@objective = loc
-
-		return unless CONFIG[:markers]
-		marker_y = @location.last - 1
-		return if marker_y < 0
-		marker = AlertMarker.new(@map, @creature_list, [@location.first, marker_y])
-		@creature_list.unshift marker
 	end
 end
 

@@ -8,7 +8,7 @@ class Creature
 
 	@@id = 0
 
-	attr_reader :color
+	attr_reader :color, :condition
 	attr_accessor :location, :status, :id, :facing
 
 	def initialize(map, creature_list, location)
@@ -19,6 +19,9 @@ class Creature
 		@id = @@id += 1
 		@facing = :north
 		@color = :white
+		@condition = { 
+			:bleeding => false, :health => 10, :infected => false
+		}.to_struct
 
 		@map[*@location].creature = self
 	end
@@ -42,7 +45,7 @@ class Creature
 				 end
 		step_coords = [@location.first + step_x, @location.last + step_y]
 
-		unless @map[*step_coords].creature.nil? then
+		unless @map[*step_coords].passable? then
 			near_loc  = @map.tiles_near(*step_coords, 1).flatten
 			near_self = @map.tiles_near(*@location, 1).flatten
 			alternatives = Array.new
@@ -50,7 +53,7 @@ class Creature
 					alternatives << s_tile.location if s_tile.location == l_tile.location
 			} }
 			alternatives.shuffle.each { |alt|
-				if @map[*alt].creature.nil? then
+				if @map[*alt].passable? then
 					step_coords = alt
 					break
 				end
@@ -142,7 +145,13 @@ class Creature
 		}
 	end
 
+	def damage(n)
+		@condition.bleeding = true
+		@condition.health -= n
+		die if @condition.health < 1
+	end
 	def bleed
+		@condition.bleeding = false if rand(5) == 0
 		@map[*@location].color = :bright_red
 	end
 	def die
@@ -154,7 +163,7 @@ class Creature
 		@map[*@location].creature = nil
 		@creature_list.delete self
 		return unless [:alive, :zombies].include? @status
-		list = if @status == :alive
+		list = if @status == :alive then
 				   :humans
 			   else
 				   :zombies
@@ -164,7 +173,6 @@ class Creature
 	end
 
 	def distance_from(other)
-		log "Evaluating #{other.inspect} (locaiton: #{other.location.inspect}"
 		Math.sqrt(
 			(@location.first - other.location.first) ** 2 +
 			(@location.last  - other.location.last) ** 2

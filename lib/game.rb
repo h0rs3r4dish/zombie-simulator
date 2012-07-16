@@ -1,6 +1,6 @@
 require 'lib/patch/helpers'
 require 'lib/console/single-buffer'
-require 'lib/map'
+require 'lib/map/core'
 require 'lib/human'
 require 'lib/zombie'
 require 'lib/items'
@@ -38,6 +38,7 @@ class Game
 	def game_loop
 		time_keeper = TimeKeeper.new(0.2)
 		loop do
+			log "-- TICK --"
 			@creatures.each { |creature| creature.tick }
 
 			@console.on_key :timeout => time_keeper.mark do |key|
