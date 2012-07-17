@@ -11,10 +11,14 @@ class Console
 
 	def text(x,y,str)
 		str = str[0..(@width - x - 1)] if str.length + x >= @width
-		print "\033[#{y};#{x}H#{str}"
+		cursor_to x,y
+		print str
 	end
 	def [](str)
 		print str
+	end
+	def cursor_to(x,y)
+		print "\033[#{y};#{x}H"
 	end
 
 	def draw; end

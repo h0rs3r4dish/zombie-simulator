@@ -4,7 +4,7 @@ require 'lib/patch/hash'
 module ZedSim
 
 class Human < Creature
-	attr_reader :pack
+	attr_reader :pack, :brain
 
 	def initialize(*args)
 		super *args
@@ -20,7 +20,7 @@ class Human < Creature
 		[ :north, :east, :south, :west, :northeast, :southeast, :southwest,
 			:northwest ].each { |direction|
 			@brain.directions[direction] = { :zombies => 0, :humans => 0,
-				:weapons => 0 }
+				:weapons => 0, :ammo => 0 }
 		}
 		@brain.personality = [
 			[:stupid, :smart].shuffle.first,
@@ -37,12 +37,12 @@ class Human < Creature
 		@facing = @brain.directions.keys.shuffle.first
 
 		# Condition
-		@condition.stance	= :standing
+		@condition.stance = :standing
 	end
 
 	def tick
 		if @condition.infected then
-			log "##{@id.to_s 16} infection level #{@brain.infection}"
+			log_self "infection level dropped to #{@brain.infection}"
 			@brain.infection -= 1
 			if @brain.infection == 0
 				turn_to_zombie
@@ -53,7 +53,7 @@ class Human < Creature
 		bleed if @condition.bleeding and rand(5) < 3
 
 		@brain.objective = @brain.priorities.pop if @brain.objective.nil?
-		log "##{@id.to_s 16} obj: #{@brain.objective.type}"
+		#log_self "obj: #{@brain.objective.type}, facing: #{@facing}"
 
 		surrounding_tiles = @map.tiles_near(*@location, 1).flatten
 		sight = line_of_sight.flatten
@@ -65,6 +65,13 @@ class Human < Creature
 			unless touchable_zombie.nil? then
 				@brain.ticks_without_zombie = -1
 				attack touchable_zombie
+			end
+			if @pack.weapon.range > 1 then
+				touchable_ammo = surrounding_tiles.select { |tile| tile.include_ammo? }.
+					select { |tile| tile.items.select { |item| item.type == :ammo }.
+					select { |item| item.size == @pack.weapon.ammo_type }.length > 0 }.
+					shuffle.first
+				pick_up_item(:ammo, touchable_ammo) unless touchable_ammo.nil?
 			end
 		else
 			if @brain.priorities.include? :find_weapon then
@@ -80,6 +87,7 @@ class Human < Creature
 			if @brain.ticks_without_zombie < 5
 				move_best_direction
 			else
+				@facing = movable_directions.shuffle.first
 				objective_shelve Objective.new(:find_group)
 			end
 		when :find_group
@@ -99,9 +107,8 @@ class Human < Creature
 				@brain.objective = Objective.new(:hunt_zombies) if @brain.personality.
 					include? :aggressive
 			else
-				nearest_weapon = sight.select { |tile| 
-					tile.include_weapon? }.sort { |tile_a, tile_b|
-					distance_from(tile_a) <=> distance_from(tile_b) }.first
+				nearest_weapon = sight.select { |tile| tile.include_weapon? }.
+					sort { |a, b| distance_from(a) <=> distance_from(b) }.first
 				if nearest_weapon.nil? then
 					move_best_direction :weapons => 2
 				else
@@ -109,14 +116,27 @@ class Human < Creature
 						pick_up_item :weapon, nearest_weapon
 						if @brain.personality.include?(:aggresive) and @brain.personality.
 							include?(:stupid) then
-							@brain.objective = Objective.new(:hunt_zombies)
-						else
-							objective_next
+							@brain.priorities << Objective.new(:hunt_zombies)
 						end
+						objective_next
 					else
 						objective_shelve Objective.new(:goto, nearest_weapon.location)
 						move_toward *@brain.objective.location
 					end
+				end
+			end
+		when :find_ammo
+			nearest_ammo = sight.select { |tile| tile.include_ammo? }.
+				sort { |a, b| distance_from(a) <=> distance_from(b) }.first
+			if nearest_ammo.nil? then
+				move_best_direction :ammo => 2
+			else
+				if distance_from(nearest_ammo) < 2 then
+					pick_up_item :ammo, nearest_ammo
+					objective_next
+				else
+					objective_shelve Objective.new(:goto, nearest_ammo.location)
+					move_toward *@brain.objective.location
 				end
 			end
 		when :goto
@@ -155,21 +175,24 @@ class Human < Creature
 			replace_with
 		end
 		@brain.priorities.push current_objective
+		log_self "has a new objective: #{@brain.objective.type}"
 	end
 	def objective_next
 		@brain.objective = @brain.priorities.pop
+		log_self "has a new objective: #{@brain.objective.type}"
 	end
 
 	def move_best_direction(changes={})
 		lean = {
 			:zombies => -((@condition.infected) ? 2 : 1),
 			:humans  => (@brain.personality.include? :smart) ? 1 : 0,
-			:weapons => 0
+			:weapons => 0,
+			:ammo    => 0
 		}
 		changes.each_pair { |k,v| lean[k] = v }
 
 		facing = @brain.directions[@facing] = { :zombies => 0, :humans => 0,
-			:weapons => 0 }
+			:weapons => 0, :ammo => 0 }
 		line_of_sight.flatten.map { |tile|
 			has = Array.new
 			unless tile.creature.nil? then
@@ -180,28 +203,15 @@ class Human < Creature
 				end
 			end
 			has << :weapons if tile.include_weapon?
+			has << :ammo if tile.include_ammo?
 			has
 		}.each { |tile| tile.each { |factor| facing[factor] += 1 } }
 
-		banned_directions = Array.new
-		if @location.first == 0 then
-			banned_directions << :west
-		elsif @location.first == @map.width - 1 then
-			banned_directions << :east
-		end
-		if @location.last == 0 then
-			banned_directions << :north
-			banned_directions << :northwest if banned_directions.include? :west
-			banned_directions << :northeast if banned_directions.include? :east
-		elsif @location.last == @map.height - 1 then
-			banned_directions << :south
-			banned_directions << :southwest if banned_directions.include? :west
-			banned_directions << :southeast if banned_directions.include? :east
-		end
+		allowed_directions = movable_directions
 
 		ordered = Array.new
 		@brain.directions.delete_if { |direction, factors|
-			banned_directions.include? direction }.each_pair { |direction, factors|
+			not allowed_directions.include? direction }.each_pair { |direction, factors|
 			ordered << [ direction, (factors.to_a.inject(0) { |total, factor|
 				total + (factor.last * lean[factor.first]) }) ] }
 		ordered = ordered.sort { |a, b| a.last <=> b.last }.select { |i|
@@ -221,11 +231,18 @@ class Human < Creature
 		objective_shelve Objective.new(:goto, loc)
 	end
 	def attack(creature)
+		if @pack.weapon.range > 1 then
+			ammo = @pack.equipment.select { |item| item.type == :ammo }.
+				select { |item| item.size == @pack.weapon.ammo }
+			return if ammo.nil?
+			return unless ammo.count > 0
+			ammo.count -= 1
+			alert_in_area @location, 5, :zombie, :attack
+		end
 		alert_in_area creature.location, 5, :alive, :attack
-		alert_in_area(@location, 5, :zombie, :attack) if @pack.weapon.range > 2
 		if rand < @pack.weapon.accuracy then
 			dmg = rand_range @pack.weapon.damage
-			log "##{@id.to_s 16} hit ##{creature.id.to_s 16} for #{dmg} damage"
+			log_self "hit ##{creature.id.to_s 16} for #{dmg} damage"
 			creature.damage dmg
 		end
 	end
@@ -235,6 +252,31 @@ class Human < Creature
 		when :weapon
 			weapon = tile.items.pop_weapon
 			@pack.weapon = weapon
+			if weapon.range > 1 then
+				@pack.equipment.select { |item| item.type == :ammo }.select { |item|
+					item.size == weapon.ammo_type }.each { |item|
+					weapon.ammo_count += item.count; @pack.equipment.delete item }
+			end
+			log_self "picked up weapon #{weapon.name}"
+		when :ammo
+			tile.items.each { |item|
+				next unless item.type == :ammo
+				tile.items.delete item
+				log_self "picked up #{item.count}x #{item.name}"
+				if @pack.weapon.range > 1 then
+					if @pack.weapon.ammo_type == item.size then
+						@pack.weapon.ammo_count += item.count
+						next
+					end
+				end
+				pack = @pack.equipment.select { |pack_item| item.type == :ammo }
+					select { |pack_item| pack_item.size == item.size }
+				if pack.nil? then
+					@pack.equipment << item
+				else
+					pack.count += item.count
+				end
+			}
 		end
 	end
 
@@ -250,6 +292,7 @@ class Human < Creature
 		remove_self
 		zed = Zombie.new(@map, @creature_list, @location, self)
 		@creature_list.push zed
+		log_self "has turned into zombie ##{@creature_list.last.id.to_s 16}"
 	end
 
 	def die

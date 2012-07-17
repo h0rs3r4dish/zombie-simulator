@@ -14,7 +14,7 @@ class Tile
 		@passable = passable
 		@elevation = 0
 		@creature = nil
-		@color = :default
+		@color = :bright_gray
 
 		@items = []
 		def @items.pop_weapon
@@ -27,12 +27,18 @@ class Tile
 		end
 	end
 
-	def include_weapon?
-		@items.each { |item| return true if item.type == :weapon }
-		return false
+	def filter_items(type)
+		@items.select { |item| item.type == type }
 	end
 	def passable?
 		(@creature.nil?) ? @passable : false
+	end
+
+	def method_missing(name, *args)
+		name = name.to_s
+		if name =~ /include_(\w*)\?/ then
+			return filter_items($1.intern).length > 0
+		end
 	end
 
 	def color
@@ -40,6 +46,7 @@ class Tile
 		return @items.first.color unless @items.empty?
 		return @color
 	end
+	def base_color; @color; end
 	def to_s
 		return @creature.to_c unless @creature.nil?
 		return @items.first.to_c unless @items.empty? 

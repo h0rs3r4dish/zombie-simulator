@@ -30,18 +30,34 @@ class Item
 
 	class << self
 		WEAPON_TYPES = [
-			[ "Machete", '/', 2..5, 0.8, 1 ],
-			[ "Axe", '/', 5..10, 0.6, 1 ],
-			[ "Pistol", '+', 5..10, 0.5, 4 ]
+			{ :name => "Machete", :damage => 2..5, :accuracy => 0.8, :range => 1 },
+			{ :name => "Axe", :damage => 5..10, :accuracy => 0.6, :range => 1 },
+			{ :name => "Pistol", :damage => 5..10, :accuracy => 0.3, :range => 4,
+				:other => { :ammo_type => :'9mm', :ammo_count => 10} }
 		]
-		def new_weapon(name, symbol, damage, accuracy, range=1)
+		AMMO_TYPES = [
+			{ :name => "9mm ammo", :size => :'9mm', :count => 5..15 }
+		]
+		def new_weapon(name, symbol, damage, accuracy, range=1, attr=nil)
 			weapon = self.new(name, :weapon, symbol)
 			weapon.add_attr :damage => damage, :accuracy => accuracy, :range => range
+			weapon.add_attr attr unless attr.nil?
 			return weapon
+		end
+		def new_ammo(name, size, count)
+			ammo = self.new(name, :ammo, '=')
+			ammo.add_attr :size => size, :count => count
+			return ammo
 		end
 
 		def new_random_weapon
-			new_weapon *WEAPON_TYPES.shuffle.first
+			spec = WEAPON_TYPES.shuffle.first
+			new_weapon(spec[:name], (spec[:range] > 1) ? '+' : '/', spec[:damage],
+					   spec[:accuracy], spec[:range], spec[:other])
+		end
+		def new_random_ammo
+			spec = AMMO_TYPES.shuffle.first
+			new_ammo spec[:name], spec[:size], rand_range(spec[:count])
 		end
 	end
 end

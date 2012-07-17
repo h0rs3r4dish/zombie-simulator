@@ -84,51 +84,62 @@ class Creature
 		move_toward (@location.first+dx).min(0).max(@map.width-1),
 			(@location.last+dy).min(0).max(@map.height-1)
 	end
+	def movable_directions
+		banned_directions = Array.new
+		if @location.first == 0 then
+			banned_directions << :west
+		elsif @location.first == @map.width - 1 then
+			banned_directions << :east
+		end
+		if @location.last == 0 then
+			banned_directions << :north
+			banned_directions << :northwest if banned_directions.include? :west
+			banned_directions << :northeast if banned_directions.include? :east
+		elsif @location.last == @map.height - 1 then
+			banned_directions << :south
+			banned_directions << :southwest if banned_directions.include? :west
+			banned_directions << :southeast if banned_directions.include? :east
+		end
+		return [ :north, :northeast, :east, :southeast, :south, :southwest, :west,
+			:northwest ] - banned_directions
+	end
 
 	def line_of_sight
 		vision = self.class.const_get :VISION_LENGTH
-		case @facing
+		(case @facing
+
 		when :north, :south
-			(0..vision).to_a.map { |offset|
-				@map[ (@location.first + ((@facing == :north) ? -offset : offset)).
-					min(0).max(@map.height - 1),
+			(0..vision).to_a.map { |width|
+				@map[
 					Range.new(
-						(@location.last - offset).min(0),
-						(@location.last + offset).max(@map.height - 1)
-				) ]
-			}.delete_if { |tile| tile.nil? }
+						(@location.first - width).min(0),
+						(@location.first + width).max(@map.width - 1),
+					),
+					(@location.last + ((@facting == :north) ? -width : width)).
+						min(0).max(@map.height - 1),
+				 ]
+			}
 		when :east, :west
 			cols = (0..vision).to_a.map { |width|
-				(
-					([nil] * (vision - width)) +
-					@map[
-						@location.first + ((@facing == :west) ? -width : width).
-							min(0).max(@map.width - 1),
-						Range.new(
-							(@location.last - width).min(0),
-							(@location.last + width).max(@map.height - 1) )
+				@map[
+					(@location.first + ((@facing == :west) ? -width : width)).
+						min(0).max(@map.width - 1),
+					Range.new(
+						(@location.last - width).min(0),
+						(@location.last + width).max(@map.height - 1) )
 
-					] +
-					([nil] * (vision - width))
-				).flatten
-			} # gives an array of cols (that is, vertical slices)
-			longest = 0; cols.each { |row|
-				longest = row.length if longest < row.length
+				]
 			}
-			rows = Array.new(longest).map { Array.new }
-			cols.each_with_index { |row, x| row.each_with_index { |tile, y|
-				rows[y][x] = tile
-			} }
-			rows.map { |col| col.delete_if { |tile| tile.nil? } }
 		when :northeast, :northwest, :southeast, :southwest
-			x_range = Range.new( @location.first, (@location.first + (
-				(@facing.to_s.include? 'south') ? -vision : vision)).min(0).max(
-					@map.width - 1) )
-			y_range = Range.new( @location.last, (@location.last + (
+			x_range = Range.new( @location.first, (@location.first - (
 				(@facing.to_s.include? 'west') ? -vision : vision)).min(0).max(
+					@map.width - 1) )
+			y_range = Range.new( @location.last, (@location.last - (
+				(@facing.to_s.include? 'south') ? -vision : vision)).min(0).max(
 					@map.height - 1) )
 			@map[x_range,y_range]
-		end
+
+		end).flatten
 	end
 
 	def alert(loc, type=nil); end
@@ -155,8 +166,9 @@ class Creature
 		@map[*@location].color = :bright_red
 	end
 	def die
+		log_self "has died"
 		remove_self
-		corpse = Item.new("Corpse of #{@id.to_s 16}", :corpse, "%", @color)
+		corpse = Item.new("Corpse of ##{@id.to_s 16}", :corpse, "%", @color)
 		@map[*@location].items << corpse
 	end
 	def remove_self
@@ -168,7 +180,6 @@ class Creature
 			   else
 				   :zombies
 			   end
-		log @creature_list.count.inspect
 		@creature_list.count[list] -= 1
 	end
 
@@ -181,6 +192,9 @@ class Creature
 
 	def tick; end
 
+	def log_self(str)
+		log "##{@id.to_s 16} #{str}"
+	end
 	def to_c; self.class.const_get :SYMBOL; end
 end
 

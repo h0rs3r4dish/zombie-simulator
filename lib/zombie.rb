@@ -71,7 +71,9 @@ class Zombie < Creature
 	def attack(human)
 		alert_in_area human.location, 7, :zombie
 		if rand(2) == 0 then
-			human.damage rand(3)+1
+			dmg = rand_range 1..4
+			log_self "bit ##{human.id.to_s 16} for #{dmg} damage"
+			human.damage dmg
 			human.infect if rand(3) == 0
 		end
 	end

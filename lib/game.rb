@@ -29,7 +29,10 @@ class Game
 		}
 
 		rand_range(CONFIG[:starting_weapons]).times {
-			@map[*random_coordinates(:for => :item)].items << Item.new_random_weapon
+			item = Item.new_random_weapon
+			coords = random_coordinates(:for => :item)
+			@map[*coords].items << Item.new_random_weapon
+			@map[*coords].items << Item.new_random_ammo if item.range > 1
 		}
 
 		game_loop
@@ -41,11 +44,6 @@ class Game
 			log "-- TICK --"
 			@creatures.each { |creature| creature.tick }
 
-			@console.on_key :timeout => time_keeper.mark do |key|
-				exit if key == 'q'
-				@console.getc if key == 'p'
-			end
-
 			if CONFIG[:color] then
 				@map.each { |row| row.each { |tile|
 					@console.color tile.color; @console[tile]
@@ -54,6 +52,12 @@ class Game
 				@map.each { |row| @console[row.to_s] }
 			end
 			@console.draw
+
+			@console.on_key :timeout => time_keeper.mark do |key|
+				exit if key == 'q'
+				@console.getc if key == 'p'
+				inspector if key == 'i'
+			end
 
 			game_end if @creatures.count.values.include? 0
 		end
@@ -69,6 +73,51 @@ class Game
 		@console.on_key :blocking => true do
 			exit
 		end
+	end
+
+	def inspector
+		cursor = [1,1]
+		bottom = @map.height
+		fstring = "%-#{@map.width}s"
+		while (key = @console.getc) != 'q'
+			case key
+			when 'h'
+				cursor[0] -= 1 unless cursor.first == 0
+			when 'j'
+				cursor[1] += 1 unless cursor.last == @map.height - 1
+			when 'k'
+				cursor[1] -= 1 unless cursor.last == 0
+			when 'l'
+				cursor[0] += 1 unless cursor.first == @map.width - 1
+			when 'g'
+				str = ''
+				begin
+					str += @console.getc
+				end while str.last != "\n"
+				cursor = str.split(',').map { |d| d.to_i }
+			end
+			tile = @map[*cursor.map { |i| i - 1 }]
+			str = ''
+			if not tile.creature.nil? then
+				creature = tile.creature
+				str += (if creature.status == :zombie then
+					"Zombie ##{creature.id.to_s 16}"
+				else
+					statuses = Array.new
+					statuses << "infected" if creature.condition.infected
+					statuses << "bleeding" if creature.condition.bleeding
+					statuses << "armed" unless creature.pack.weapon.nil?
+					"Human ##{creature.id.to_s 16}" + ( (statuses.length > 0) ?
+						" (#{statuses.join(', ')})" : "" )
+				end) + " on "
+			elsif not tile.items.empty? then
+				str += tile.items.map { |i| i.name }.join(', ') + " on "
+			end
+			str += (tile.base_color == :bright_gray) ? "ground" : "bloody ground"
+			@console.text(0,bottom, fstring % str)
+			@console.cursor_to *cursor
+		end
+		@console.cursor_to @map.width, @map.height
 	end
 
 	def random_coordinates(h)
