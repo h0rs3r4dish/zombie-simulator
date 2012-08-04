@@ -1,6 +1,6 @@
 require 'lib/patch/helpers'
 require 'lib/console/single-buffer'
-require 'lib/map/core'
+require 'lib/map/map'
 require 'lib/human'
 require 'lib/zombie'
 require 'lib/items'
@@ -54,9 +54,9 @@ class Game
 			@console.draw
 
 			@console.on_key :timeout => time_keeper.mark do |key|
-				exit if key == 'q'
-				@console.getc if key == 'p'
-				inspector if key == 'i'
+				exit if key == CONFIG[:keys][:quit]
+				@console.getc if key == CONFIG[:keys][:pause]
+				inspector if key == CONFIG[:keys][:inspect]
 			end
 
 			game_end if @creatures.count.values.include? 0

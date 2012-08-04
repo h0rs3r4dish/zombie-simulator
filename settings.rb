@@ -6,5 +6,11 @@ CONFIG = {
 	:starting_weapons => 1..20,
 
 	:color => true,
-	:markers => false
+	:markers => false,
+
+	:keys => {
+		:quit => 'q',
+		:pause => 'p',
+		:inspect => 'i'
+	}
 }

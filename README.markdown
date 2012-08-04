@@ -20,6 +20,9 @@ Checklist
    (done)
  * Humans fighting Zombies with weapons (done)
  * More complex combat
+   * Ammunition system for guns (WIP)
+   * Character stances (standing, laying down)
+   * More complex damage model
 
 
 Phase 2
