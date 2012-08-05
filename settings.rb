@@ -11,6 +11,10 @@ CONFIG = {
 	:keys => {
 		:quit => 'q',
 		:pause => 'p',
-		:inspect => 'i'
+		:inspect => 'i',
+		:move_left => 'h',
+		:move_down => 'j',
+		:move_up => 'k',
+		:move_right => 'l'
 	}
 }

@@ -79,21 +79,26 @@ class Game
 		cursor = [1,1]
 		bottom = @map.height
 		fstring = "%-#{@map.width}s"
-		while (key = @console.getc) != 'q'
+		while (key = @console.getc) != CONFIG[:keys][:quit]
 			case key
-			when 'h'
+			when CONFIG[:keys][:move_left]
 				cursor[0] -= 1 unless cursor.first == 0
-			when 'j'
+			when CONFIG[:keys][:move_down]
 				cursor[1] += 1 unless cursor.last == @map.height - 1
-			when 'k'
+			when CONFIG[:keys][:move_up]
 				cursor[1] -= 1 unless cursor.last == 0
-			when 'l'
+			when CONFIG[:keys][:move_right]
 				cursor[0] += 1 unless cursor.first == @map.width - 1
 			when 'g'
 				str = ''
-				begin
-					str += @console.getc
-				end while str.last != "\n"
+				@console.cursor_to 0, bottom
+				print "Go to: "
+				loop do
+					key = @console.getc
+					break if key == "\r"
+					print key
+					str += key
+				end
 				cursor = str.split(',').map { |d| d.to_i }
 			end
 			tile = @map[*cursor.map { |i| i - 1 }]

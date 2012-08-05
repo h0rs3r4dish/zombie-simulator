@@ -53,7 +53,6 @@ class Human < Creature
 		bleed if @condition.bleeding and rand(5) < 3
 
 		@brain.objective = @brain.priorities.pop if @brain.objective.nil?
-		#log_self "obj: #{@brain.objective.type}, facing: #{@facing}"
 
 		surrounding_tiles = @map.tiles_near(*@location, 1).flatten
 		sight = line_of_sight.flatten
@@ -104,8 +103,8 @@ class Human < Creature
 			end
 		when :find_weapon
 			unless @pack.weapon.nil? then
-				@brain.objective = Objective.new(:hunt_zombies) if @brain.personality.
-					include? :aggressive
+				objective_next( (@brain.personality.include? :aggressive) ?
+							   :hunt_zombies : nil )
 			else
 				nearest_weapon = sight.select { |tile| tile.include_weapon? }.
 					sort { |a, b| distance_from(a) <=> distance_from(b) }.first
@@ -114,11 +113,6 @@ class Human < Creature
 				else
 					if distance_from(nearest_weapon) < 2 then
 						pick_up_item :weapon, nearest_weapon
-						if @brain.personality.include?(:aggresive) and @brain.personality.
-							include?(:stupid) then
-							@brain.priorities << Objective.new(:hunt_zombies)
-						end
-						objective_next
 					else
 						objective_shelve Objective.new(:goto, nearest_weapon.location)
 						move_toward *@brain.objective.location
@@ -175,11 +169,18 @@ class Human < Creature
 			replace_with
 		end
 		@brain.priorities.push current_objective
-		log_self "has a new objective: #{@brain.objective.type}"
+		objective_log
 	end
-	def objective_next
-		@brain.objective = @brain.priorities.pop
-		log_self "has a new objective: #{@brain.objective.type}"
+	def objective_next(*args)
+		new_obj = (args.first.nil?) ? @brain.priorities.pop : Objective.new(*args)
+		objective_log
+	end
+	def objective_log
+		log_self "has a new objective: #{@brain.objective.type}#{
+			unless @brain.objective.location.nil? then
+				" #{@brain.objective.location.join(',')}"
+			end
+		}"
 	end
 
 	def move_best_direction(changes={})
@@ -223,8 +224,8 @@ class Human < Creature
 	def alert(loc, type=nil)
 		case type
 		when :attack
-			return unless @brain.personality.include?(:aggressive) and not @pack.
-				weapon.nil?
+			return unless @brain.personality.include?(:aggressive) and not @pack.weapon.
+				nil?
 		when :defend
 			return if @pack.weapon.nil?
 		end
