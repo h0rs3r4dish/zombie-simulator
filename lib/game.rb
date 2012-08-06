@@ -70,6 +70,7 @@ class Game
 	end
 
 	def draw_map
+		@console.cursor_to 0,0
 		if CONFIG[:color] then
 			@map.each { |row| row.each { |tile|
 				@console.color tile.color; @console[tile]
