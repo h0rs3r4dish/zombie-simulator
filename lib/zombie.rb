@@ -56,13 +56,14 @@ class Zombie < Creature
 					@objective = nil
 				end
 			end
-			coinflip = rand 4 # 0 = no move, 1-2 = follow @facing, 3 = random
-			return if coinflip == 0
-			if coinflip == 3 then
-				move_toward rand(@map.width), rand(@map.height)
+			case rand(4) # 0 = no move, 1-2 = follow @facing, 3 = random
+			when 0
 				return
+			when 3
+				move_toward rand(@map.width), rand(@map.height)
+			else
+				move_along_facing
 			end
-			move_along_facing
 		else
 			move_toward *nearest_human.location
 		end
