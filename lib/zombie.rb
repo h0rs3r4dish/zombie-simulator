@@ -50,7 +50,7 @@ class Zombie < Creature
 		if nearest_human.nil? then
 			unless @objective.nil? then
 				if @location != @objective then
-					move_toward *@objective
+					move_toward @objective
 					return
 				else
 					@objective = nil
@@ -60,12 +60,12 @@ class Zombie < Creature
 			when 0
 				return
 			when 3
-				move_toward rand(@map.width), rand(@map.height)
+				move_toward [rand(@map.width), rand(@map.height)]
 			else
 				move_along_facing
 			end
 		else
-			move_toward *nearest_human.location
+			move_toward nearest_human.location
 		end
 	end
 

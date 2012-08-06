@@ -108,7 +108,7 @@ class Human < Creature
 						end
 					else
 						objective_shelve Objective.new(:goto, nearest_weapon.location)
-						move_toward *@brain.objective.location
+						move_toward @brain.objective.location
 					end
 				end
 			else
@@ -126,12 +126,12 @@ class Human < Creature
 					objective_next
 				else
 					objective_shelve Objective.new(:goto, nearest_ammo.location)
-					move_toward *@brain.objective.location
+					move_toward @brain.objective.location
 				end
 			end
 		when :goto
 			if @location != @brain.objective.location then
-				move_toward *@brain.objective.location
+				move_toward @brain.objective.location
 			else
 				objective_next
 			end
@@ -304,9 +304,9 @@ class Human < Creature
 	end
 end
 
-Objective = Struct.new(:type, :location) do
+Objective = Struct.new(:type, :location, :line) do
 	def to_s
-		self.type.to_s + ( (self.location.nil?) ? "" : location.to_s )
+		self.type.to_s + ( (self.location.nil?) ? "" : " "+location.to_s )
 	end
 end
 
