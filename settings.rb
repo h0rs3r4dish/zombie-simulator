@@ -1,5 +1,5 @@
 CONFIG = {
-	:map => [80, 24],
+	:map => [80, 23],
 
 	:starting_humans  => 15..30,
 	:starting_zombies => 3..10,

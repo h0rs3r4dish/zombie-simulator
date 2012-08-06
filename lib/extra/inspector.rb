@@ -4,8 +4,8 @@ class Game
 
 	def inspector
 		cursor = [1,1]
-		bottom = @map.height
-		fstring = "%-#{@map.width}s"
+		bottom = @map.height+1
+		fstring = "%-#{@map.width-5}s%2s,%2s"
 		while (key = @console.getc) != CONFIG[:keys][:quit]
 			case key
 			when CONFIG[:keys][:move_left]
@@ -71,7 +71,7 @@ class Game
 				str += tile.items.map { |i| i.name }.join(', ') + " on "
 			end
 			str += (tile.base_color == :bright_gray) ? "ground" : "bloody ground"
-			@console.text(0,bottom, fstring % str)
+			@console.text(0,bottom, fstring % [str,*cursor])
 			@console.cursor_to *cursor
 		end
 		@console.cursor_to 0,0
