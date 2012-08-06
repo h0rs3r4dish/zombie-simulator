@@ -55,7 +55,7 @@ class Human < Creature
 		@brain.objective = @brain.priorities.pop if @brain.objective.nil?
 
 		surrounding_tiles = @map.tiles_near(*@location, 1).flatten
-		sight = line_of_sight.flatten
+		sight = line_of_sight
 
 		unless @pack.weapon.nil? then
 			touchable_zombie = surrounding_tiles.map { |tile|
@@ -71,13 +71,6 @@ class Human < Creature
 					select { |item| item.size == @pack.weapon.ammo_type }.length > 0 }.
 					shuffle.first
 				pick_up_item(:ammo, touchable_ammo) unless touchable_ammo.nil?
-			end
-		else
-			if @brain.priorities.include? :find_weapon then
-				touchable_weapon = surrounding_tiles.select { |tile|
-					tile.include_weapon? }.shuffle.first
-				pick_up_item(:weapon, touchable_weapon) unless touchable_weapon.nil?
-				@brain.priorities.delete :find_weapon
 			end
 		end
 
@@ -102,10 +95,7 @@ class Human < Creature
 				objective_next
 			end
 		when :find_weapon
-			unless @pack.weapon.nil? then
-				objective_next( (@brain.personality.include? :aggressive) ?
-							   :hunt_zombies : nil )
-			else
+			if @pack.weapon.nil? then
 				nearest_weapon = sight.select { |tile| tile.include_weapon? }.
 					sort { |a, b| distance_from(a) <=> distance_from(b) }.first
 				if nearest_weapon.nil? then
@@ -118,6 +108,9 @@ class Human < Creature
 						move_toward *@brain.objective.location
 					end
 				end
+			else
+				objective_next( (@brain.personality.include? :aggressive) ?
+							   :hunt_zombies : nil )
 			end
 		when :find_ammo
 			nearest_ammo = sight.select { |tile| tile.include_ammo? }.
@@ -173,6 +166,7 @@ class Human < Creature
 	end
 	def objective_next(*args)
 		new_obj = (args.first.nil?) ? @brain.priorities.pop : Objective.new(*args)
+		@brain.objective = new_obj
 		objective_log
 	end
 	def objective_log
