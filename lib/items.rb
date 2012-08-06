@@ -27,6 +27,7 @@ class Item
 	end
 
 	def to_c; @symbol; end
+	def to_s; @name; end
 
 	class << self
 		WEAPON_TYPES = [

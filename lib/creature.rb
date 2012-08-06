@@ -174,13 +174,15 @@ class Creature
 	def remove_self
 		@map[*@location].creature = nil
 		@creature_list.delete self
-		return unless [:alive, :zombies].include? @status
+		return unless [:alive, :zombie].include? @status
 		list = if @status == :alive then
 				   :humans
 			   else
 				   :zombies
 			   end
 		@creature_list.count[list] -= 1
+		log_self "removed from the creature list, #{@creature_list.count[list]} #{
+			list} remaining"
 	end
 
 	def distance_from(other)

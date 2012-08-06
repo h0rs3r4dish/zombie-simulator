@@ -103,6 +103,9 @@ class Human < Creature
 				else
 					if distance_from(nearest_weapon) < 2 then
 						pick_up_item :weapon, nearest_weapon
+						if @pack.weapon.range > 1 then
+							objective_next :find_ammo
+						end
 					else
 						objective_shelve Objective.new(:goto, nearest_weapon.location)
 						move_toward *@brain.objective.location
@@ -228,7 +231,7 @@ class Human < Creature
 	def attack(creature)
 		if @pack.weapon.range > 1 then
 			ammo = @pack.equipment.select { |item| item.type == :ammo }.
-				select { |item| item.size == @pack.weapon.ammo }
+				select { |item| item.size == @pack.weapon.ammo }.first
 			return if ammo.nil?
 			return unless ammo.count > 0
 			ammo.count -= 1
@@ -301,6 +304,10 @@ class Human < Creature
 	end
 end
 
-Objective = Struct.new(:type, :location)
+Objective = Struct.new(:type, :location) do
+	def to_s
+		self.type.to_s + ( (self.location.nil?) ? "" : location.to_s )
+	end
+end
 
 end
